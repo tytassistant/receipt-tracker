@@ -852,6 +852,158 @@ Rules:
         const extractBtn = document.getElementById('extractBtn');
         extractBtn.addEventListener('click', extractReceipts);
 
+        // ===== GOOGLE APPS SCRIPT INTEGRATION (Phase 5) =====
+        const confirmBtn = document.getElementById('confirmBtn');
+        confirmBtn.addEventListener('click', saveAllReceipts);
+
+        // Get today's HKT date in YYYYMMDD format (for Drive folder)
+        function getHKTDateYYYYMMDD() {
+            return new Date().toLocaleDateString('en-HK', { timeZone: 'Asia/Hong_Kong', year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\//g, '');
+        }
+
+        // Build request payload
+        function buildPayload(action, data) {
+            const stored = JSON.parse(localStorage.getItem('receiptTrackerConfig'));
+            return {
+                token: stored.secretToken,
+                action: action,
+                data: data
+            };
+        }
+
+        // Handle Apps Script errors gracefully
+        function handleAppError(res) {
+            if (!res.ok) {
+                if (res.status === 403) throw new Error('Invalid token – check your secret token in settings.');
+                if (res.status === 404) throw new Error('Apps Script URL not found – check your URL in settings.');
+                throw new Error(`Server error: ${res.status}`);
+            }
+            return res.json();
+        }
+
+        // Upload a single image to Google Drive
+        async function uploadImageToDrive(imageDataUrl, filename, folderDate) {
+            const stored = JSON.parse(localStorage.getItem('receiptTrackerConfig'));
+            const url = stored.appsScriptUrl;
+
+            const payload = buildPayload('uploadImage', {
+                filename: filename,
+                imageBase64: imageDataUrl,
+                folderDate: folderDate
+            });
+
+            const res = await fetch(url, {
+                method: 'POST',
+                body: JSON.stringify(payload),
+                headers: { 'Content-Type': 'application/json' }
+            });
+
+            const json = await handleAppError(res);
+            return json.fileUrl || json.url;
+        }
+
+        // Save all receipt records to Google Sheet
+        async function saveReceiptsToSheet(receiptRecords) {
+            const stored = JSON.parse(localStorage.getItem('receiptTrackerConfig'));
+            const url = stored.appsScriptUrl;
+
+            const payload = buildPayload('saveReceipts', {
+                receipts: receiptRecords
+            });
+
+            const res = await fetch(url, {
+                method: 'POST',
+                body: JSON.stringify(payload),
+                headers: { 'Content-Type': 'application/json' }
+            });
+
+            const json = await handleAppError(res);
+            return json;
+        }
+
+        // Main save orchestrator – uploads all images, then saves records
+        async function saveAllReceipts() {
+            if (!extractedReceipts.length) {
+                showToast('No receipts to save.', 'error');
+                return;
+            }
+
+            // Validate all receipts have required fields
+            const invalid = extractedReceipts.filter(r => !r.description || r.amount === 0);
+            if (invalid.length > 0) {
+                showToast(`Please fill in description and amount for all receipts (${invalid.length} remaining).`, 'error');
+                return;
+            }
+
+            confirmBtn.disabled = true;
+            confirmBtn.textContent = 'Saving... please wait';
+            const savingMsg = document.createElement('p');
+            savingMsg.id = 'savingProgress';
+            savingMsg.style.fontSize = '13px';
+            savingMsg.style.color = '#555';
+            savingMsg.style.marginTop = '8px';
+            savingMsg.textContent = 'Uploading images to Google Drive... 0%';
+            confirmBtn.parentElement.appendChild(savingMsg);
+
+            try {
+                const folderDate = getHKTDateYYYYMMDD();
+                const receiptRecords = [];
+
+                // Step 1: Upload all images to Drive
+                for (let i = 0; i < extractedReceipts.length; i++) {
+                    const r = extractedReceipts[i];
+                    savingMsg.textContent = `Uploading images to Google Drive... ${Math.round((i / extractedReceipts.length) * 50)}%`;
+
+                    if (r.imageDataUrl) {
+                        const timestamp = Date.now();
+                        const filename = `receipt_${folderDate}_${String(i + 1).padStart(3, '0')}.jpg`;
+                        try {
+                            r.driveUrl = await uploadImageToDrive(r.imageDataUrl, filename, folderDate);
+                        } catch (err) {
+                            console.error('Image upload failed for', r.id, err);
+                            r.driveUrl = '';
+                        }
+                    } else {
+                        r.driveUrl = '';
+                    }
+
+                    // Build record for Sheet
+                    receiptRecords.push({
+                        date: r.date,
+                        description: r.description,
+                        amount: r.amount,
+                        currency: r.currency,
+                        category: r.category,
+                        remarks: r.remarks,
+                        imageUrl: r.driveUrl || ''
+                    });
+                }
+
+                // Step 2: Save all records to Google Sheet
+                savingMsg.textContent = 'Saving receipts to Google Sheet... 60%';
+                const result = await saveReceiptsToSheet(receiptRecords);
+
+                savingMsg.textContent = 'Done! 100%';
+                confirmBtn.textContent = 'Saved! ';
+                confirmBtn.style.background = '#28a745';
+
+                // Reset after 3s
+                setTimeout(() => {
+                    confirmBtn.textContent = 'Confirm & Save';
+                    confirmBtn.style.background = '';
+                    confirmBtn.disabled = false;
+                    savingMsg.remove();
+                    showToast(`' ${extractedReceipts.length} receipt(s) saved to Google Drive/Sheet!', 'info');
+                }, 2000);
+
+            } catch (err) {
+                confirmBtn.disabled = false;
+                confirmBtn.textContent = 'Confirm & Save';
+                if (savingMsg) savingMsg.remove();
+                showToast('Save failed: ' + err.message, 'error');
+            }
+        }
+
     </script>
 </body>
 </html>

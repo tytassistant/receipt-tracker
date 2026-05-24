@@ -596,11 +596,256 @@ Rules:
             });
         }
 
-        // ===== REVIEW TABLE (Phase 4 stub – fully built in Phase 4) =====
+        // ===== REVIEW TABLE (Phase 4) =====
         function renderReviewTable() {
             const container = document.getElementById('reviewTableContainer');
             if (!extractedReceipts.length) { container.innerHTML = ''; return; }
-            container.innerHTML = '<p style="color:#666;">Review table will be built in Phase 4. Data extracted: ' + extractedReceipts.length + ' receipt(s).</p>';
+            
+            const table = document.createElement('table');
+            table.style.width = '100%';
+            table.style.borderCollapse = 'collapse';
+            table.style.background = '#fff';
+            table.style.borderRadius = '6px';
+            table.style.overflow = 'hidden';
+            table.style.boxShadow = '0 1px 3px rgba(0,0,0,0.1)';
+            
+            // Table header
+            const header = document.createElement('thead');
+            header.style.background = '#f8f9fa';
+            header.style.borderBottom = '1px solid #dee2e6';
+            const headerRow = document.createElement('tr');
+            const headers = ['Image', 'Description', 'Amount', 'Currency', 'Date', 'Category', 'Remarks', ''];
+            headers.forEach(text => {
+                const th = document.createElement('th');
+                th.textContent = text;
+                th.style.padding = '12px';
+                th.style.textAlign = text === 'Image' ? 'center' : 'left';
+                th.style.fontSize = '14px';
+                th.style.fontWeight = '600';
+                th.style.color = '#495057';
+                headerRow.appendChild(th);
+            });
+            header.appendChild(headerRow);
+            table.appendChild(header);
+            
+            // Table body
+            const tbody = document.createElement('tbody');
+            extractedReceipts.forEach((receipt, index) => {
+                const row = document.createElement('tr');
+                row.style.borderBottom = '1px solid #f1f3f5';
+                
+                // Image thumbnail
+                const tdImage = document.createElement('td');
+                tdImage.style.padding = '8px';
+                tdImage.style.textAlign = 'center';
+                const img = document.createElement('img');
+                img.src = receipt.imageDataUrl;
+                img.style.width = '60px';
+                img.style.height = 'auto';
+                img.style.borderRadius = '4px';
+                img.style.cursor = 'pointer';
+                img.title = 'Click to enlarge';
+                img.addEventListener('click', () => enlargeImage(receipt.imageDataUrl));
+                tdImage.appendChild(img);
+                row.appendChild(tdImage);
+                
+                // Description
+                const tdDesc = document.createElement('td');
+                tdDesc.style.padding = '8px';
+                const descInput = document.createElement('input');
+                descInput.type = 'text';
+                descInput.value = receipt.description;
+                descInput.style.width = '100%';
+                descInput.style.border = '1px solid #ced4da';
+                descInput.style.borderRadius = '4px';
+                descInput.style.padding = '6px 8px';
+                descInput.style.fontSize = '14px';
+                descInput.addEventListener('change', (e) => {
+                    receipt.description = e.target.value;
+                });
+                tdDesc.appendChild(descInput);
+                row.appendChild(tdDesc);
+                
+                // Amount
+                const tdAmount = document.createElement('td');
+                tdAmount.style.padding = '8px';
+                const amountInput = document.createElement('input');
+                amountInput.type = 'number';
+                amountInput.step = '0.01';
+                amountInput.value = receipt.amount;
+                amountInput.style.width = '100px';
+                amountInput.style.border = '1px solid #ced4da';
+                amountInput.style.borderRadius = '4px';
+                amountInput.style.padding = '6px 8px';
+                amountInput.style.fontSize = '14px';
+                amountInput.addEventListener('change', (e) => {
+                    receipt.amount = parseFloat(e.target.value) || 0;
+                });
+                tdAmount.appendChild(amountInput);
+                row.appendChild(tdAmount);
+                
+                // Currency
+                const tdCurrency = document.createElement('td');
+                tdCurrency.style.padding = '8px';
+                const currencySelect = document.createElement('select');
+                const currencies = ['HKD', 'USD', 'EUR', 'CNY', 'JPY', 'GBP'];
+                currencies.forEach(cur => {
+                    const opt = document.createElement('option');
+                    opt.value = cur;
+                    opt.textContent = cur;
+                    opt.selected = cur === receipt.currency;
+                    currencySelect.appendChild(opt);
+                });
+                currencySelect.style.width = '80px';
+                currencySelect.style.border = '1px solid #ced4da';
+                currencySelect.style.borderRadius = '4px';
+                currencySelect.style.padding = '6px 8px';
+                currencySelect.style.fontSize = '14px';
+                currencySelect.addEventListener('change', (e) => {
+                    receipt.currency = e.target.value;
+                });
+                tdCurrency.appendChild(currencySelect);
+                row.appendChild(tdCurrency);
+                
+                // Date
+                const tdDate = document.createElement('td');
+                tdDate.style.padding = '8px';
+                const dateInput = document.createElement('input');
+                dateInput.type = 'date';
+                dateInput.value = receipt.date;
+                dateInput.style.width = '120px';
+                dateInput.style.border = '1px solid #ced4da';
+                dateInput.style.borderRadius = '4px';
+                dateInput.style.padding = '6px 8px';
+                dateInput.style.fontSize = '14px';
+                dateInput.addEventListener('change', (e) => {
+                    receipt.date = e.target.value;
+                });
+                tdDate.appendChild(dateInput);
+                row.appendChild(tdDate);
+                
+                // Category
+                const tdCategory = document.createElement('td');
+                tdCategory.style.padding = '8px';
+                const categorySelect = document.createElement('select');
+                const categories = ['Food', 'Transport', 'Grocery', 'Shopping', 'Others'];
+                categories.forEach(cat => {
+                    const opt = document.createElement('option');
+                    opt.value = cat;
+                    opt.textContent = cat;
+                    opt.selected = cat === receipt.category;
+                    categorySelect.appendChild(opt);
+                });
+                categorySelect.style.width = '100px';
+                categorySelect.style.border = '1px solid #ced4da';
+                categorySelect.style.borderRadius = '4px';
+                categorySelect.style.padding = '6px 8px';
+                categorySelect.style.fontSize = '14px';
+                categorySelect.addEventListener('change', (e) => {
+                    receipt.category = e.target.value;
+                });
+                tdCategory.appendChild(categorySelect);
+                row.appendChild(tdCategory);
+                
+                // Remarks
+                const tdRemarks = document.createElement('td');
+                tdRemarks.style.padding = '8px';
+                const remarksInput = document.createElement('input');
+                remarksInput.type = 'text';
+                remarksInput.value = receipt.remarks;
+                remarksInput.style.width = '100%';
+                remarksInput.style.border = '1px solid #ced4da';
+                remarksInput.style.borderRadius = '4px';
+                remarksInput.style.padding = '6px 8px';
+                remarksInput.style.fontSize = '14px';
+                remarksInput.addEventListener('change', (e) => {
+                    receipt.remarks = e.target.value;
+                });
+                tdRemarks.appendChild(remarksInput);
+                row.appendChild(tdRemarks);
+                
+                // Delete button
+                const tdDelete = document.createElement('td');
+                tdDelete.style.padding = '8px';
+                tdDelete.style.textAlign = 'center';
+                const deleteBtn = document.createElement('button');
+                deleteBtn.innerHTML = '×';
+                deleteBtn.className = 'btn-primary';
+                deleteBtn.style.background = '#dc3545';
+                deleteBtn.style.width = '30px';
+                deleteBtn.style.height = '30px';
+                deleteBtn.style.display = 'flex';
+                deleteBtn.style.alignItems = 'center';
+                deleteBtn.style.justifyContent = 'center';
+                deleteBtn.style.margin = '0';
+                deleteBtn.addEventListener('click', () => {
+                    extractedReceipts.splice(index, 1);
+                    renderReviewTable();
+                    showToast('Receipt removed.', 'info');
+                });
+                tdDelete.appendChild(deleteBtn);
+                row.appendChild(tdDelete);
+                
+                tbody.appendChild(row);
+            });
+            
+            table.appendChild(tbody);
+            container.innerHTML = '';
+            container.appendChild(table);
+            
+            // Add button for manual entry
+            const addRowBtn = document.createElement('button');
+            addRowBtn.className = 'btn-primary';
+            addRowBtn.style.marginTop = '15px';
+            addRowBtn.style.background = '#28a745';
+            addRowBtn.innerHTML = '<i style="margin-right: 8px;">+</i> Add Manual Receipt';
+            addRowBtn.addEventListener('click', addManualReceipt);
+            container.appendChild(addRowBtn);
+        }
+        
+        // Add a manual receipt row
+        function addManualReceipt() {
+            const today = new Date().toLocaleDateString('en-HK', { timeZone: 'Asia/Hong_Kong', year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\//g, '-');
+            extractedReceipts.push({
+                id: `manual-${Date.now()}`,
+                description: '',
+                amount: 0,
+                currency: 'HKD',
+                date: today,
+                remarks: '',
+                category: 'Others',
+                imageDataUrl: null,
+                status: 'pending'
+            });
+            renderReviewTable();
+            showToast('Added manual receipt row.', 'info');
+        }
+        
+        // Lightbox for enlarging images
+        function enlargeImage(imageUrl) {
+            const overlay = document.createElement('div');
+            overlay.style.position = 'fixed';
+            overlay.style.top = '0';
+            overlay.style.left = '0';
+            overlay.style.width = '100%';
+            overlay.style.height = '100%';
+            overlay.style.backgroundColor = 'rgba(0,0,0,0.8)';
+            overlay.style.zIndex = '9999';
+            overlay.style.display = 'flex';
+            overlay.style.alignItems = 'center';
+            overlay.style.justifyContent = 'center';
+            
+            const img = document.createElement('img');
+            img.src = imageUrl;
+            img.style.maxWidth = '90%';
+            img.style.maxHeight = '90%';
+            img.style.objectFit = 'contain';
+            
+            overlay.addEventListener('click', (e) => {
+                if (e.target === overlay) overlay.remove();
+            });
+            
+            document.body.appendChild(overlay);
         }
 
         // ===== EXTRACT BUTTON =====

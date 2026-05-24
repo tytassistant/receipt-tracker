@@ -194,10 +194,17 @@
         <div id="mainScreen">
             <!-- Upload Section -->
             <div id="uploadSection">
-                <label for="fileInput" class="upload-label">Select Receipt Photos</label>
+                <p style="font-size:13px;color:#333;">Select receipt photos:</p>
                 <input type="file" id="fileInput" accept="image/*" multiple style="display:none" />
                 <button id="selectFilesBtn" class="btn-primary">Choose Images</button>
                 <p style="font-size:12px;color:#666;margin-top:4px;">Select one or more receipt photos (PNG/JPG). Max 5MB each.</p>
+                <button id="extractBtn" class="btn-primary" style="margin-top:15px;">Extract Data</button>
+            </div>
+
+            <!-- Loading indicator -->
+            <div id="loadingIndicator" style="display:none;text-align:center;margin:20px 0;">
+                <p>🔍 Extracting receipt data, please wait...</p>
+                <div id="extractProgress" style="font-size:13px;color:#555;"></div>
             </div>
 
             <!-- Preview Grid -->
@@ -393,33 +400,212 @@
             });
         }
 
-        // ===== LLM EXTRACTION (Placeholder) =====
-        // This will be implemented in Phase 3
+        // ===== LLM EXTRACTION (Phase 3) =====
+        // Stores extracted receipt objects after extraction
+        let extractedReceipts = [];
+
+        // Build system prompt for receipt extraction
+        function buildSystemPrompt() {
+            return `You are a receipt data extraction assistant. For each receipt image, extract the following fields and return ONLY valid JSON (no markdown, no explanation):
+
+{
+  "description": "What the receipt is for (e.g., \"Dinner at Restaurant ABC\", \"Grocery shopping\")",
+  "amount": "The TOTAL amount shown on the receipt (just the number, not the currency symbol). If no total is clearly shown, estimate from the breakdown.",
+  "currency": "The currency code (HKD, USD, EUR, CNY, JPY, GBP). Infer from the receipt if possible, default to HKD.",
+  "date": "Date on the receipt in YYYY-MM-DD format. If no date is visible, use today's date.",
+  "remarks": "Brief breakdown or notable details (e.g., \"2x Set dinner, 1x drinks\"). Leave empty if nothing notable.",
+  "category": "One of: Food, Transport, Grocery, Shopping, Others"
+}
+
+Rules:
+- Always return valid JSON matching the schema above.
+- amount must be a number (no commas, no currency symbols).
+- category must be exactly one of: Food, Transport, Grocery, Shopping, Others.
+- If the image is not a receipt, return: {"error": "Not a receipt"}
+- Return JSON only, no markdown fences, no text before or after.`;
+        }
+
+        // Build user prompt with base64 image
+        function buildUserPrompt(imageDataUrl) {
+            return {
+                role: 'user',
+                content: [
+                    { type: 'text', text: 'Extract the receipt data from this image. Return JSON only.' },
+                    { type: 'image', source: { type: 'base64', data: imageDataUrl.split(',')[1], media_type: 'image/jpeg' } }
+                ]
+            };
+        }
+
+        // Call Poe API for a single image
+        async function extractSingleReceipt(imageDataUrl) {
+            const poeKey = window._poeApiKey;
+            if (!poeKey) throw new Error('Poe API key not available');
+
+            const response = await fetch('https://api.poe.com/task/async_send_message', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${poeKey}`
+                },
+                body: JSON.stringify({
+                    bot_id: 'claude-3-7-sonnet',
+                    method: 'submit_sensitive_query',
+                    query: [buildUserPrompt(imageDataUrl)],
+                    system_instruction: buildSystemPrompt(),
+                    withStreaming: false,
+                    scientificallyLanugage: 'en'
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(`Poe API error: ${response.status}`);
+            }
+
+            const data = await response.json();
+            const taskId = data.task_id;
+
+            // Poll for completion (up to 60s)
+            const result = await pollTaskResult(taskId, poeKey);
+            return parseLLMResponse(result);
+        }
+
+        // Poll task result until completion
+        async function pollTaskResult(taskId, poeKey, maxWaitMs = 60000) {
+            const start = Date.now();
+            while (Date.now() - start < maxWaitMs) {
+                await sleep(3000);
+                const res = await fetch('https://api.poe.com/task/async_query_result', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${poeKey}`
+                    },
+                    body: JSON.stringify({ task_id: taskId })
+                });
+                const d = await res.json();
+                if (d.status === 'success') return d;
+                if (d.status === 'failed') throw new Error('LLM task failed');
+            }
+            throw new Error('LLM extraction timed out');
+        }
+
+        // Parse LLM JSON response into a receipt object
+        function parseLLMResponse(result) {
+            const text = result?.data?.message_history?.[result.data.message_history.length - 1]?.content?.[0]?.text;
+            if (!text) throw new Error('No text in LLM response');
+            // Try to extract JSON from the response
+            let jsonStr = text.trim();
+            // Strip markdown fences if present
+            const jsonMatch = jsonStr.match(/\{[\s\S]*\}/);
+            if (!jsonMatch) throw new Error('No JSON found in LLM response');
+            jsonStr = jsonMatch[0];
+            const parsed = JSON.parse(jsonStr);
+            if (parsed.error) throw new Error('LLM reported: ' + parsed.error);
+            return {
+                description: parsed.description || 'Unknown',
+                amount: parseFloat(parsed.amount) || 0,
+                currency: parsed.currency || 'HKD',
+                date: normalizeDate(parsed.date),
+                remarks: parsed.remarks || '',
+                category: normalizeCategory(parsed.category),
+                status: 'pending'
+            };
+        }
+
+        function normalizeDate(dateStr) {
+            if (!dateStr) {
+                // Use today's HKT date
+                return new Date().toLocaleDateString('en-HK', { timeZone: 'Asia/Hong_Kong', year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\//g, '-');
+            }
+            // Try to parse various date formats and return YYYY-MM-DD
+            const d = new Date(dateStr);
+            if (isNaN(d.getTime())) return new Date().toLocaleDateString('en-HK', { timeZone: 'Asia/Hong_Kong', year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\//g, '-');
+            return d.toISOString().split('T')[0];
+        }
+
+        function normalizeCategory(cat) {
+            const valid = ['Food', 'Transport', 'Grocery', 'Shopping', 'Others'];
+            if (valid.includes(cat)) return cat;
+            // Fuzzy match
+            const lower = cat.toLowerCase();
+            if (lower.includes('food') || lower.includes('restaurant') || lower.includes('dinner') || lower.includes('lunch')) return 'Food';
+            if (lower.includes('transport') || lower.includes('taxi') || lower.includes('mrt') || lower.includes('bus')) return 'Transport';
+            if (lower.includes('grocery') || lower.includes('supermarket') || lower.includes('market')) return 'Grocery';
+            if (lower.includes('shop') || lower.includes('cloth') || lower.includes('online')) return 'Shopping';
+            return 'Others';
+        }
+
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        // Main extraction function
         async function extractReceipts() {
             if (selectedFiles.length === 0) {
                 showToast('No images selected.', 'error');
                 return;
             }
-            // Show loading indicator
             loadingIndicator.style.display = 'block';
-            // TODO: Build prompt, call Poe API, parse response
-            // For now, simulate extraction
-            setTimeout(() => {
+            const progress = document.getElementById('extractProgress');
+            extractBtn.style.display = 'none';
+            extractedReceipts = [];
+
+            try {
+                for (let i = 0; i < selectedFiles.length; i++) {
+                    progress.textContent = `Processing image ${i + 1} of ${selectedFiles.length}...`;
+                    const file = selectedFiles[i];
+                    const dataUrl = await fileToDataUrl(file);
+                    try {
+                        const receipt = await extractSingleReceipt(dataUrl);
+                        receipt.id = `receipt-${Date.now()}-${i}`;
+                        receipt.imageDataUrl = dataUrl;
+                        extractedReceipts.push(receipt);
+                    } catch (err) {
+                        console.error(`Failed to extract image ${i}:`, err);
+                        // Add a blank entry so user can fill manually
+                        extractedReceipts.push({
+                            id: `receipt-${Date.now()}-${i}`,
+                            description: '',
+                            amount: 0,
+                            currency: 'HKD',
+                            date: normalizeDate(null),
+                            remarks: '(Extraction failed – please fill manually)',
+                            category: 'Others',
+                            imageDataUrl: dataUrl,
+                            status: 'pending'
+                        });
+                    }
+                }
                 loadingIndicator.style.display = 'none';
-                // Show review panel with dummy data
                 reviewPanel.style.display = 'block';
-                showToast('Extraction simulated – real LLM integration in Phase 3.', 'info');
-            }, 1500);
+                renderReviewTable();
+                showToast(`Extracted ${extractedReceipts.length} receipt(s).`, 'info');
+            } catch (err) {
+                loadingIndicator.style.display = 'none';
+                extractBtn.style.display = '';
+                showToast('Extraction failed: ' + err.message, 'error');
+            }
         }
 
-        // Add a button to trigger extraction (for demo)
-        const extractBtn = document.createElement('button');
-        extractBtn.id = 'extractBtn';
-        extractBtn.className = 'btn-primary';
-        extractBtn.textContent = 'Extract Data';
-        extractBtn.style.marginTop = '15px';
+        function fileToDataUrl(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = e => resolve(e.target.result);
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+        }
+
+        // ===== REVIEW TABLE (Phase 4 stub – fully built in Phase 4) =====
+        function renderReviewTable() {
+            const container = document.getElementById('reviewTableContainer');
+            if (!extractedReceipts.length) { container.innerHTML = ''; return; }
+            container.innerHTML = '<p style="color:#666;">Review table will be built in Phase 4. Data extracted: ' + extractedReceipts.length + ' receipt(s).</p>';
+        }
+
+        // ===== EXTRACT BUTTON =====
+        const extractBtn = document.getElementById('extractBtn');
         extractBtn.addEventListener('click', extractReceipts);
-        uploadSection.appendChild(extractBtn);
 
     </script>
 </body>

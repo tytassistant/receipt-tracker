@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Receipt Tracker</title>
+    <style>
+        /* ===============
+           Basic Layout & Typography
+           =============== */
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: #f5f5f5;
+            color: #333;
+        }
+        .container {
+            max-width: 960px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+        /* ===============
+           Config Screen (PIN, API key, Apps Script URL, secret token)
+           =============== */
+        #configScreen {
+            display: none;
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            max-width: 500px;
+            margin: 40px auto;
+        }
+        #configScreen label {
+            display: block;
+            margin-top: 1rem;
+            font-weight: bold;
+        }
+        #configScreen input {
+            width: 100%;
+            padding: 8px;
+            margin-top: 4px;
+            box-sizing: border-box;
+        }
+        #configScreen button {
+            margin-top: 1.5rem;
+            padding: 10px 20px;
+            background: #0066cc;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        #configScreen button:hover {
+            background: #0055aa;
+        }
+        /* ===============
+           Unlock Screen (PIN entry)
+           =============== */
+        #unlockScreen {
+            display: none;
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            max-width: 300px;
+            margin: 40px auto;
+        }
+        #unlockScreen input {
+            width: 100%;
+            padding: 8px;
+            box-sizing: border-box;
+        }
+        #unlockScreen button {
+            margin-top: 1rem;
+            padding: 8px 16px;
+            background: #28a745;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        #unlockScreen button:hover {
+            background: #218838;
+        }
+        /* ===============
+           Placeholder for later phases
+           =============== */
+        #mainScreen {
+            display: none;
+        }
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #333;
+            color: #fff;
+            padding: 10px 20px;
+            border-radius: 4px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .toast.show {
+            opacity: 0.9;
+        }
+
+        /* ===============
+           Photo Capture Styles
+           =============== */
+        .preview-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 12px;
+        }
+        .preview-item {
+            position: relative;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            overflow: hidden;
+            background: #fff;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .preview-item img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+        .preview-item .delete-btn {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            background: rgba(220, 53, 69, 0.9);
+            color: #fff;
+            border: none;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            font-size: 14px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .preview-item .delete-btn:hover {
+            background: rgba(220, 53, 69, 1);
+        }
+        .btn-primary {
+            background: #0066cc;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .btn-primary:hover {
+            background: #0055aa;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Receipt Tracker</h1>
+        <!-- Config screen -> first time users set up credentials -->
+        <div id="configScreen">
+            <label for="poeKey">Poe API Key</label>
+            <input type="password" id="poeKey" placeholder="Enter your Poe API key" autocomplete="off" />
+
+            <label for="pin">Set PIN (6 alphanumeric characters)</label>
+            <input type="text" id="pin" maxlength="6" placeholder="e.g. aB3dE9" autocomplete="off" />
+
+            <label for="appsScriptUrl">Google Apps Script URL</label>
+            <input type="url" id="appsScriptUrl" placeholder="https://script.google.com/.../exec" />
+
+            <label for="secretToken">Secret Token (random string)</label>
+            <input type="text" id="secretToken" placeholder="Enter a random token" />
+
+            <button id="saveConfigBtn">Save Configuration</button>
+        </div>
+
+        <!-- Unlock screen -> subsequent visits request the PIN -->
+        <div id="unlockScreen">
+            <label for="pinUnlock">Enter PIN</label>
+            <input type="password" id="pinUnlock" maxlength="6" placeholder="PIN" autocomplete="off" />
+            <button id="unlockBtn">Unlock</button>
+        </div>
+
+        <!-- Main screen – photo capture & review -->
+        <div id="mainScreen">
+            <!-- Upload Section -->
+            <div id="uploadSection">
+                <label for="fileInput" class="upload-label">Select Receipt Photos</label>
+                <input type="file" id="fileInput" accept="image/*" multiple style="display:none" />
+                <button id="selectFilesBtn" class="btn-primary">Choose Images</button>
+                <p style="font-size:12px;color:#666;margin-top:4px;">Select one or more receipt photos (PNG/JPG). Max 5MB each.</p>
+            </div>
+
+            <!-- Preview Grid -->
+            <div id="previewGrid" class="preview-grid" style="display:flex;gap:10px;margin-top:15px;"></div>
+
+            <!-- Review Panel (populated after extraction) -->
+            <div id="reviewPanel" style="display:none;margin-top:20px;">
+                <h3>Review Extracted Data</h3>
+                <div id="reviewTableContainer"></div>
+                <button id="confirmBtn" class="btn-primary" style="margin-top:10px;">Confirm & Save</button>
+            </div>
+        </div>
+    </div>
+    <div id="toast" class="toast"></div>
+
+    <script>
+        // Utility: simple toast messaging
+        function showToast(msg, type = "info") {
+            const toast = document.getElementById('toast');
+            toast.textContent = msg;
+            toast.style.background = type === 'error' ? '#d9534f' : '#333';
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+
+        // Crypto helpers – adapted from the existing sake‑research app
+        async function getKeyFromPin(pin, salt) {
+            const enc = new TextEncoder();
+            const keyMaterial = await crypto.subtle.importKey(
+                'raw', enc.encode(pin), { name: 'PBKDF2' }, false, ['deriveKey']
+            );
+            return crypto.subtle.deriveKey(
+                { name: 'PBKDF2', salt, iterations: 200000, hash: 'SHA-256' },
+                keyMaterial,
+                { name: 'AES-GCM', length: 256 },
+                false,
+                ['encrypt', 'decrypt']
+            );
+        }
+
+        async function encryptPoeKey(poeKey, pin) {
+            const enc = new TextEncoder();
+            const salt = crypto.getRandomValues(new Uint8Array(16));
+            const iv = crypto.getRandomValues(new Uint8Array(12));
+            const key = await getKeyFromPin(pin, salt);
+            const ciphertext = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, enc.encode(poeKey));
+            // Store base64 strings for persistence
+            return {
+                cipher: btoa(String.fromCharCode(...new Uint8Array(ciphertext))),
+                iv: btoa(String.fromCharCode(...iv)),
+                salt: btoa(String.fromCharCode(...salt))
+            };
+        }
+
+        async function decryptPoeKey(encObj, pin) {
+            const dec = new TextDecoder();
+            const iv = Uint8Array.from(atob(encObj.iv), c => c.charCodeAt(0));
+            const salt = Uint8Array.from(atob(encObj.salt), c => c.charCodeAt(0));
+            const cipher = Uint8Array.from(atob(encObj.cipher), c => c.charCodeAt(0));
+            const key = await getKeyFromPin(pin, salt);
+            const plain = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, cipher);
+            return dec.decode(plain);
+        }
+
+        // ------- UI Logic -------
+        const configScreen = document.getElementById('configScreen');
+        const unlockScreen = document.getElementById('unlockScreen');
+        const mainScreen = document.getElementById('mainScreen');
+
+        // Check for saved config
+        const storedConfig = localStorage.getItem('receiptTrackerConfig');
+        if (!storedConfig) {
+            // First‑time user – show config UI
+            configScreen.style.display = 'block';
+        } else {
+            // Config exists – ask for PIN
+            unlockScreen.style.display = 'block';
+        }
+
+        // Save Config button handler
+        document.getElementById('saveConfigBtn').addEventListener('click', async () => {
+            const poeKey = document.getElementById('poeKey').value.trim();
+            const pin = document.getElementById('pin').value.trim();
+            const appsScriptUrl = document.getElementById('appsScriptUrl').value.trim();
+            const secretToken = document.getElementById('secretToken').value.trim();
+
+            if (!poeKey || !pin || pin.length !== 6 || !/^[A-Za-z0-9]{6}$/.test(pin)) {
+                showToast('Please provide a valid Poe key and a 6‑character alphanumeric PIN.', 'error');
+                return;
+            }
+            if (!appsScriptUrl || !secretToken) {
+                showToast('Apps Script URL and secret token are required.', 'error');
+                return;
+            }
+
+            const enc = await encryptPoeKey(poeKey, pin);
+            const config = {
+                poeKeyEnc: enc,
+                appsScriptUrl,
+                secretToken
+            };
+            localStorage.setItem('receiptTrackerConfig', JSON.stringify(config));
+            // Clear the form fields for security
+            document.getElementById('poeKey').value = '';
+            document.getElementById('pin').value = '';
+            document.getElementById('appsScriptUrl').value = '';
+            document.getElementById('secretToken').value = '';
+            showToast('Configuration saved. Please reload the page.', 'info');
+            configScreen.style.display = 'none';
+        });
+
+        // Unlock button handler
+        document.getElementById('unlockBtn').addEventListener('click', async () => {
+            const pin = document.getElementById('pinUnlock').value.trim();
+            if (!pin) { showToast('Enter PIN', 'error'); return; }
+            const stored = JSON.parse(localStorage.getItem('receiptTrackerConfig'));
+            try {
+                const poeKey = await decryptPoeKey(stored.poeKeyEnc, pin);
+                // Store the plain key in a volatile variable for later phases (do NOT persist)
+                window._poeApiKey = poeKey;
+                unlockScreen.style.display = 'none';
+                mainScreen.style.display = 'block';
+                showToast('Unlocked – ready for next phases.', 'info');
+            } catch (e) {
+                console.error(e);
+                showToast('Incorrect PIN or decryption failed.', 'error');
+            }
+        });
+
+        // ===== PHOTO CAPTURE HANDLERS =====
+        const fileInput = document.getElementById('fileInput');
+        const selectFilesBtn = document.getElementById('selectFilesBtn');
+        const previewGrid = document.getElementById('previewGrid');
+        const reviewPanel = document.getElementById('reviewPanel');
+        const loadingIndicator = document.getElementById('loadingIndicator');
+
+        // Array to store selected files (for later processing)
+        let selectedFiles = [];
+
+        // Show file picker when button clicked
+        selectFilesBtn.addEventListener('click', () => {
+            fileInput.click();
+        });
+
+        // Handle file selection
+        fileInput.addEventListener('change', (e) => {
+            const files = Array.from(e.target.files);
+            // Filter out non-image files and limit to 10 images
+            const validFiles = files.filter(file => file.type.startsWith('image/') && file.size <= 5 * 1024 * 1024);
+            if (validFiles.length === 0) {
+                showToast('No valid images selected (must be PNG/JPG, max 5MB).', 'error');
+                return;
+            }
+            // Add new files to the list (avoid duplicates)
+            validFiles.forEach(file => {
+                if (!selectedFiles.some(f => f.name === file.name && f.size === file.size)) {
+                    selectedFiles.push(file);
+                }
+            });
+            renderThumbnails();
+            // Reset input so same files can be selected again if needed
+            fileInput.value = '';
+        });
+
+        // Render thumbnails for selected files
+        function renderThumbnails() {
+            previewGrid.innerHTML = '';
+            selectedFiles.forEach((file, index) => {
+                const item = document.createElement('div');
+                item.className = 'preview-item';
+                const img = document.createElement('img');
+                img.id = `thumb-${index}`;
+                img.alt = file.name;
+                img.title = file.name;
+                // Use FileReader to create thumbnail
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+                // Delete button
+                const delBtn = document.createElement('button');
+                delBtn.className = 'delete-btn';
+                delBtn.innerHTML = '×';
+                delBtn.title = 'Remove image';
+                delBtn.addEventListener('click', () => {
+                    selectedFiles.splice(index, 1);
+                    renderThumbnails();
+                });
+                item.appendChild(img);
+                item.appendChild(delBtn);
+                previewGrid.appendChild(item);
+            });
+        }
+
+        // ===== LLM EXTRACTION (Placeholder) =====
+        // This will be implemented in Phase 3
+        async function extractReceipts() {
+            if (selectedFiles.length === 0) {
+                showToast('No images selected.', 'error');
+                return;
+            }
+            // Show loading indicator
+            loadingIndicator.style.display = 'block';
+            // TODO: Build prompt, call Poe API, parse response
+            // For now, simulate extraction
+            setTimeout(() => {
+                loadingIndicator.style.display = 'none';
+                // Show review panel with dummy data
+                reviewPanel.style.display = 'block';
+                showToast('Extraction simulated – real LLM integration in Phase 3.', 'info');
+            }, 1500);
+        }
+
+        // Add a button to trigger extraction (for demo)
+        const extractBtn = document.createElement('button');
+        extractBtn.id = 'extractBtn';
+        extractBtn.className = 'btn-primary';
+        extractBtn.textContent = 'Extract Data';
+        extractBtn.style.marginTop = '15px';
+        extractBtn.addEventListener('click', extractReceipts);
+        uploadSection.appendChild(extractBtn);
+
+    </script>
+</body>
+</html>

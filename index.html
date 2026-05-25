@@ -810,7 +810,7 @@
         <h2 id="saveDoneTitle">All saved!</h2>
         <p id="saveDoneText">Your receipts are now in Google Drive and Sheets.</p>
       </div>
-      <div id="saveErrorDetail" style="display:none; margin-top:16px; padding:12px; background:var(--danger-light); border-radius:var(--radius-sm); color:var(--danger);"></div>
+      <div id="saveErrorDetail" style="display:none; margin-top:16px; padding:12px; background:var(--danger-light); border-radius:var(--radius-sm); color:var(--danger); font-family:monospace; font-size:12px; white-space:pre-wrap; word-break:break-all; border:1px solid var(--danger);"></div>
       <div class="action-bar" style="justify-content:center;">
         <button class="btn btn-accent" id="newReceiptBtn">
           <i class="fas fa-receipt"></i> Capture more receipts
@@ -1478,7 +1478,16 @@ async function uploadToDrive(dataUrl, filename, folderDate) {
       })
     });
   } catch (e) {
-    throw new Error('Network error uploading image: ' + e.message + ' — check your Apps Script URL is correct and deployed');
+    const payloadSummary = JSON.stringify({
+      token: config.secretToken ? config.secretToken.replace(/./g, '*') : '(missing)',
+      action: 'uploadImage',
+      data: { filename, imageBase64: base64.substring(0, 40) + '...[TRUNCATED]', folderDate }
+    }, null, 2);
+    throw new Error(
+      'Network error: ' + e.message + '\n' +
+      'URL: ' + config.appsScriptUrl + '\n' +
+      'Payload: ' + payloadSummary
+    );
   }
   
   const result = await response.json().catch(() => ({}));
@@ -1510,7 +1519,19 @@ async function writeToSheet(data) {
       })
     });
   } catch (e) {
-    throw new Error('Network error saving to sheet: ' + e.message + ' — check your Apps Script URL is correct and deployed');
+    const payloadSummary = JSON.stringify({
+      token: config.secretToken ? config.secretToken.replace(/./g, '*') : '(missing)',
+      action: 'saveReceipts',
+      data: { receipts: [{
+        date: data.date, description: data.description, amount: data.amount,
+        currency: data.currency, category: data.category, remarks: data.remarks, imageUrl: data.imageUrl
+      }] }
+    }, null, 2);
+    throw new Error(
+      'Network error: ' + e.message + '\n' +
+      'URL: ' + config.appsScriptUrl + '\n' +
+      'Payload: ' + payloadSummary
+    );
   }
   
   const result = await response.json().catch(() => ({}));

@@ -1462,50 +1462,60 @@ async function saveReceipts() {
 async function uploadToDrive(dataUrl, filename, folderDate) {
   const base64 = dataUrl.split(',')[1];
   
-  const response = await fetch(config.appsScriptUrl, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      token: config.secretToken,
-      action: 'uploadImage',
-      data: {
-        filename: filename,
-        imageBase64: base64,
-        folderDate: folderDate
-      }
-    })
-  });
+  let response;
+  try {
+    response = await fetch(config.appsScriptUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        token: config.secretToken,
+        action: 'uploadImage',
+        data: {
+          filename: filename,
+          imageBase64: base64,
+          folderDate: folderDate
+        }
+      })
+    });
+  } catch (e) {
+    throw new Error('Network error uploading image: ' + e.message + ' — check your Apps Script URL is correct and deployed');
+  }
   
-  const result = await response.json();
+  const result = await response.json().catch(() => ({}));
   if (!result.success) {
-    throw new Error(result.error || 'Upload failed');
+    throw new Error('Apps Script uploadImage error: ' + (result.error || response.status));
   }
   
   return { url: result.fileUrl };
 }
 
 async function writeToSheet(data) {
-  const response = await fetch(config.appsScriptUrl, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      token: config.secretToken,
-      action: 'saveReceipts',
-      data: { receipts: [{
-        date: data.date,
-        description: data.description,
-        amount: parseFloat(data.amount) || 0,
-        currency: data.currency || 'HKD',
-        category: data.category || 'Other',
-        remarks: data.remarks || '',
-        imageUrl: data.imageUrl || ''
-      }] }
-    })
-  });
+  let response;
+  try {
+    response = await fetch(config.appsScriptUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        token: config.secretToken,
+        action: 'saveReceipts',
+        data: { receipts: [{
+          date: data.date,
+          description: data.description,
+          amount: parseFloat(data.amount) || 0,
+          currency: data.currency || 'HKD',
+          category: data.category || 'Other',
+          remarks: data.remarks || '',
+          imageUrl: data.imageUrl || ''
+        }] }
+      })
+    });
+  } catch (e) {
+    throw new Error('Network error saving to sheet: ' + e.message + ' — check your Apps Script URL is correct and deployed');
+  }
   
-  const result = await response.json();
+  const result = await response.json().catch(() => ({}));
   if (!result.success) {
-    throw new Error(result.error || 'Save failed');
+    throw new Error('Apps Script saveReceipts error: ' + (result.error || response.status));
   }
 }
 

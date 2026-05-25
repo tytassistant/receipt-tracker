@@ -1490,9 +1490,12 @@ async function uploadToDrive(dataUrl, filename, folderDate) {
     );
   }
   
-  const result = await response.json().catch(() => ({}));
+  const result = await response.text().then(text => { try { return JSON.parse(text); } catch { return { _raw: text, _status: response.status }; } }).catch(() => ({}));
   if (!result.success) {
-    throw new Error('Apps Script uploadImage error: ' + (result.error || response.status));
+    const detail = result._raw
+      ? `HTTP ${response.status} — body: ${result._raw.substring(0, 200)}`
+      : `HTTP ${response.status} — ${result.error || 'unknown error'}`;
+    throw new Error('Apps Script uploadImage error: ' + detail);
   }
   
   return { url: result.fileUrl };
@@ -1534,9 +1537,12 @@ async function writeToSheet(data) {
     );
   }
   
-  const result = await response.json().catch(() => ({}));
+  const result = await response.text().then(text => { try { return JSON.parse(text); } catch { return { _raw: text, _status: response.status }; } }).catch(() => ({}));
   if (!result.success) {
-    throw new Error('Apps Script saveReceipts error: ' + (result.error || response.status));
+    const detail = result._raw
+      ? `HTTP ${response.status} — body: ${result._raw.substring(0, 200)}`
+      : `HTTP ${response.status} — ${result.error || 'unknown error'}`;
+    throw new Error('Apps Script saveReceipts error: ' + detail);
   }
 }
 

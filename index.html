@@ -766,11 +766,12 @@
           <thead>
             <tr>
               <th style="width:70px;">Photo</th>
-              <th>Vendor</th>
+              <th>Description</th>
               <th style="width:100px;">Date</th>
               <th style="width:90px;">Amount</th>
               <th style="width:80px;">Currency</th>
               <th style="width:120px;">Category</th>
+              <th>Remarks</th>
               <th style="width:40px;"></th>
             </tr>
           </thead>
@@ -1326,7 +1327,7 @@ function renderReviewTable() {
   tbody.innerHTML = receipts.map(r => `
     <tr data-id="${r.id}">
       <td><img src="${r.imageDataUrl}" class="photo-thumb" onclick="openLightbox('${r.imageDataUrl}')"></td>
-      <td><input type="text" value="${escapeHtml(r.vendor)}" onchange="updateReceipt('${r.id}', 'vendor', this.value)" placeholder="Vendor"></td>
+      <td><input type="text" value="${escapeHtml(r.vendor)}" onchange="updateReceipt('${r.id}', 'vendor', this.value)" placeholder="Description"></td>
       <td><input type="date" value="${r.date || ''}" onchange="updateReceipt('${r.id}', 'date', this.value)"></td>
       <td><input type="number" step="0.01" value="${r.amount}" onchange="updateReceipt('${r.id}', 'amount', this.value)" placeholder="0.00"></td>
       <td>
@@ -1343,6 +1344,7 @@ function renderReviewTable() {
           ).join('')}
         </select>
       </td>
+      <td><input type="text" value="${escapeHtml(r.remarks || '')}" onchange="updateReceipt('${r.id}', 'remarks', this.value)" placeholder="Notes..."></td>
       <td><button class="delete-btn" onclick="deleteReceipt('${r.id}')"><i class="fas fa-trash"></i></button></td>
     </tr>
   `).join('');
@@ -1391,7 +1393,7 @@ async function saveReceipts() {
   // Validate
   const invalid = receipts.filter(r => !r.vendor || !r.amount);
   if (invalid.length > 0) {
-    showToast('Please fill in vendor and amount for all receipts', 'error');
+    showToast('Please fill in description and amount for all receipts', 'error');
     return;
   }
   
@@ -1415,7 +1417,7 @@ async function saveReceipts() {
     try {
       // Upload image to Drive
       const filename = `receipt_${today}_${String(i + 1).padStart(3, '0')}.jpg`;
-      const uploadResult = await uploadToDrive(r.imageDataUrl, filename);
+      const uploadResult = await uploadToDrive(r.imageDataUrl, filename, today);
       
       // Write to Sheet
       await writeToSheet({
@@ -1457,7 +1459,7 @@ async function saveReceipts() {
   }
 }
 
-async function uploadToDrive(dataUrl, filename) {
+async function uploadToDrive(dataUrl, filename, folderDate) {
   const base64 = dataUrl.split(',')[1];
   
   const response = await fetch(config.appsScriptUrl, {
@@ -1469,7 +1471,7 @@ async function uploadToDrive(dataUrl, filename) {
       data: {
         filename: filename,
         imageBase64: base64,
-        folderDate: today
+        folderDate: folderDate
       }
     })
   });

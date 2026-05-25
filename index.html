@@ -1478,13 +1478,15 @@ async function uploadToDrive(dataUrl, filename, folderDate) {
       })
     });
   } catch (e) {
+    const isCorsPreflight = e.message.toLowerCase().includes('failed to fetch') || e.message.includes('NetworkError');
+    const hint = isCorsPreflight ? ' (hint: this is often a CORS preflight block — check deployment access is \u0027Anyone\u0027)' : '';
     const payloadSummary = JSON.stringify({
       token: config.secretToken ? config.secretToken.replace(/./g, '*') : '(missing)',
       action: 'uploadImage',
       data: { filename, imageBase64: base64.substring(0, 40) + '...[TRUNCATED]', folderDate }
     }, null, 2);
     throw new Error(
-      'Network error: ' + e.message + '\n' +
+      'Network error: ' + e.message + hint + '\n' +
       'URL: ' + config.appsScriptUrl + '\n' +
       'Payload: ' + payloadSummary
     );
@@ -1522,6 +1524,8 @@ async function writeToSheet(data) {
       })
     });
   } catch (e) {
+    const isCorsPreflight = e.message.toLowerCase().includes('failed to fetch') || e.message.includes('NetworkError');
+    const hint = isCorsPreflight ? ' (hint: this is often a CORS preflight block — check deployment access is \u0027Anyone\u0027)' : '';
     const payloadSummary = JSON.stringify({
       token: config.secretToken ? config.secretToken.replace(/./g, '*') : '(missing)',
       action: 'saveReceipts',
@@ -1531,7 +1535,7 @@ async function writeToSheet(data) {
       }] }
     }, null, 2);
     throw new Error(
-      'Network error: ' + e.message + '\n' +
+      'Network error: ' + e.message + hint + '\n' +
       'URL: ' + config.appsScriptUrl + '\n' +
       'Payload: ' + payloadSummary
     );

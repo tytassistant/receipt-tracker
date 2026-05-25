@@ -4,195 +4,47 @@
     <meta charset="UTF-8" />
     <title>Receipt Tracker</title>
     <style>
-        /* ===============
-           Basic Layout & Typography
-           =============== */
-        body {
-            font-family: Arial, Helvetica, sans-serif;
-            margin: 0;
-            padding: 0;
-            background: #f5f5f5;
-            color: #333;
-        }
-        .container {
-            max-width: 960px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-        h1 {
-            text-align: center;
-            margin-bottom: 1rem;
-        }
-        /* ===============
-           Config Screen (PIN, API key, Apps Script URL, secret token)
-           =============== */
-        #configScreen {
-            display: none;
-            background: #fff;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            max-width: 500px;
-            margin: 40px auto;
-        }
-        #configScreen label {
-            display: block;
-            margin-top: 1rem;
-            font-weight: bold;
-        }
-        #configScreen input {
-            width: 100%;
-            padding: 8px;
-            margin-top: 4px;
-            box-sizing: border-box;
-        }
-        #configScreen button {
-            margin-top: 1.5rem;
-            padding: 10px 20px;
-            background: #0066cc;
-            color: #fff;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-        #configScreen button:hover {
-            background: #0055aa;
-        }
-        /* ===============
-           Unlock Screen (PIN entry)
-           =============== */
-        #unlockScreen {
-            display: none;
-            background: #fff;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            max-width: 300px;
-            margin: 40px auto;
-        }
-        #unlockScreen input {
-            width: 100%;
-            padding: 8px;
-            box-sizing: border-box;
-        }
-        #unlockScreen button {
-            margin-top: 1rem;
-            padding: 8px 16px;
-            background: #28a745;
-            color: #fff;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-        #unlockScreen button:hover {
-            background: #218838;
-        }
-        /* ===============
-           Placeholder for later phases
-           =============== */
-        #mainScreen {
-            display: none;
-        }
-        .toast {
-            position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: #333;
-            color: #fff;
-            padding: 10px 20px;
-            border-radius: 4px;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-        }
-        .toast.show {
-            opacity: 0.9;
-        }
-
-        /* ===============
-           Photo Capture Styles
-           =============== */
-        .preview-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-            gap: 12px;
-        }
-        .preview-item {
-            position: relative;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            overflow: hidden;
-            background: #fff;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        }
-        .preview-item img {
-            width: 100%;
-            height: auto;
-            display: block;
-        }
-        .preview-item .delete-btn {
-            position: absolute;
-            top: 4px;
-            right: 4px;
-            background: rgba(220, 53, 69, 0.9);
-            color: #fff;
-            border: none;
-            border-radius: 50%;
-            width: 24px;
-            height: 24px;
-            font-size: 14px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .preview-item .delete-btn:hover {
-            background: rgba(220, 53, 69, 1);
-        }
-        .btn-primary {
-            background: #0066cc;
-            color: #fff;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 14px;
-        }
-        .btn-primary:hover {
-            background: #0055aa;
-        }
+        body { font-family: Arial, Helvetica, sans-serif; margin: 0; padding: 0; background: #f5f5f5; color: #333; }
+        .container { max-width: 960px; margin: 0 auto; padding: 20px; }
+        h1 { text-align: center; margin-bottom: 1rem; }
+        #configScreen, #unlockScreen { display: none; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); max-width: 500px; margin: 40px auto; }
+        #configScreen label, #unlockScreen label { display: block; margin-top: 1rem; font-weight: bold; }
+        #configScreen input, #unlockScreen input { width: 100%; padding: 8px; margin-top: 4px; box-sizing: border-box; }
+        #configScreen button, #unlockScreen button { margin-top: 1rem; padding: 10px 20px; background: #0066cc; color: #fff; border: none; border-radius: 4px; cursor: pointer; }
+        #unlockScreen button { background: #28a745; }
+        #mainScreen { display: none; }
+        .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #333; color: #fff; padding: 10px 20px; border-radius: 4px; opacity: 0; transition: opacity 0.3s ease; }
+        .toast.show { opacity: 0.9; }
+        .preview-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 12px; }
+        .preview-item { position: relative; border: 1px solid #ddd; border-radius: 6px; overflow: hidden; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .preview-item img { width: 100%; height: auto; display: block; }
+        .preview-item .delete-btn { position: absolute; top: 4px; right: 4px; background: rgba(220, 53, 69, 0.9); color: #fff; border: none; border-radius: 50%; width: 24px; height: 24px; cursor: pointer; }
+        .btn-primary { background: #0066cc; color: #fff; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-size: 14px; }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>Receipt Tracker</h1>
-        <!-- Config screen -> first time users set up credentials -->
+
         <div id="configScreen">
             <label for="poeKey">Poe API Key</label>
             <input type="password" id="poeKey" placeholder="Enter your Poe API key" autocomplete="off" />
-
             <label for="pin">Set PIN (6 alphanumeric characters)</label>
             <input type="text" id="pin" maxlength="6" placeholder="e.g. aB3dE9" autocomplete="off" />
-
             <label for="appsScriptUrl">Google Apps Script URL</label>
             <input type="url" id="appsScriptUrl" placeholder="https://script.google.com/.../exec" />
-
-            <label for="secretToken">Secret Token (random string)</label>
+            <label for="secretToken">Secret Token</label>
             <input type="text" id="secretToken" placeholder="Enter a random token" />
-
             <button id="saveConfigBtn">Save Configuration</button>
         </div>
 
-        <!-- Unlock screen -> subsequent visits request the PIN -->
         <div id="unlockScreen">
             <label for="pinUnlock">Enter PIN</label>
             <input type="password" id="pinUnlock" maxlength="6" placeholder="PIN" autocomplete="off" />
             <button id="unlockBtn">Unlock</button>
         </div>
 
-        <!-- Main screen – photo capture & review -->
         <div id="mainScreen">
-            <!-- Upload Section -->
             <div id="uploadSection">
                 <p style="font-size:13px;color:#333;">Select receipt photos:</p>
                 <input type="file" id="fileInput" accept="image/*" multiple style="display:none" />
@@ -200,17 +52,8 @@
                 <p style="font-size:12px;color:#666;margin-top:4px;">Select one or more receipt photos (PNG/JPG). Max 5MB each.</p>
                 <button id="extractBtn" class="btn-primary" style="margin-top:15px;">Extract Data</button>
             </div>
-
-            <!-- Loading indicator -->
-            <div id="loadingIndicator" style="display:none;text-align:center;margin:20px 0;">
-                <p>🔍 Extracting receipt data, please wait...</p>
-                <div id="extractProgress" style="font-size:13px;color:#555;"></div>
-            </div>
-
-            <!-- Preview Grid -->
-            <div id="previewGrid" class="preview-grid" style="display:flex;gap:10px;margin-top:15px;"></div>
-
-            <!-- Review Panel (populated after extraction) -->
+            <div id="previewGrid" class="preview-grid" style="margin-top:15px;"></div>
+            <div id="loadingIndicator" style="display:none;text-align:center;margin:20px 0;"><p>Extracting receipt data...</p></div>
             <div id="reviewPanel" style="display:none;margin-top:20px;">
                 <h3>Review Extracted Data</h3>
                 <div id="reviewTableContainer"></div>
@@ -221,789 +64,134 @@
     <div id="toast" class="toast"></div>
 
     <script>
-        // Utility: simple toast messaging
-        function showToast(msg, type = "info") {
-            const toast = document.getElementById('toast');
+        function showToast(msg, type) {
+            var toast = document.getElementById('toast');
             toast.textContent = msg;
             toast.style.background = type === 'error' ? '#d9534f' : '#333';
             toast.classList.add('show');
-            setTimeout(() => toast.classList.remove('show'), 3000);
+            setTimeout(function() { toast.classList.remove('show'); }, 3000);
         }
 
-        // Crypto helpers – adapted from the existing sake‑research app
-        async function getKeyFromPin(pin, salt) {
-            const enc = new TextEncoder();
-            const keyMaterial = await crypto.subtle.importKey(
-                'raw', enc.encode(pin), { name: 'PBKDF2' }, false, ['deriveKey']
-            );
-            return crypto.subtle.deriveKey(
-                { name: 'PBKDF2', salt, iterations: 200000, hash: 'SHA-256' },
-                keyMaterial,
-                { name: 'AES-GCM', length: 256 },
-                false,
-                ['encrypt', 'decrypt']
-            );
+        function encryptPoeKey(poeKey, pin) {
+            return new Promise(function(resolve, reject) {
+                var enc = new TextEncoder();
+                var salt = crypto.getRandomValues(new Uint8Array(16));
+                var iv = crypto.getRandomValues(new Uint8Array(12));
+                crypto.subtle.importKey('raw', enc.encode(pin), {name: 'PBKDF2'}, false, ['deriveKey'])
+                    .then(function(keyMaterial) {
+                        return crypto.subtle.deriveKey(
+                            {name: 'PBKDF2', salt: salt, iterations: 200000, hash: 'SHA-256'},
+                            keyMaterial, {name: 'AES-GCM', length: 256}, false, ['encrypt']
+                        );
+                    })
+                    .then(function(key) {
+                        return crypto.subtle.encrypt({name: 'AES-GCM', iv: iv}, key, enc.encode(poeKey));
+                    })
+                    .then(function(ciphertext) {
+                        resolve({
+                            cipher: btoa(String.fromCharCode.apply(null, new Uint8Array(ciphertext))),
+                            iv: btoa(String.fromCharCode.apply(null, iv)),
+                            salt: btoa(String.fromCharCode.apply(null, salt))
+                        });
+                    })
+                    .catch(reject);
+            });
         }
 
-        async function encryptPoeKey(poeKey, pin) {
-            const enc = new TextEncoder();
-            const salt = crypto.getRandomValues(new Uint8Array(16));
-            const iv = crypto.getRandomValues(new Uint8Array(12));
-            const key = await getKeyFromPin(pin, salt);
-            const ciphertext = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, enc.encode(poeKey));
-            // Store base64 strings for persistence
-            return {
-                cipher: btoa(String.fromCharCode(...new Uint8Array(ciphertext))),
-                iv: btoa(String.fromCharCode(...iv)),
-                salt: btoa(String.fromCharCode(...salt))
-            };
+        function decryptPoeKey(encObj, pin) {
+            return new Promise(function(resolve, reject) {
+                var dec = new TextDecoder();
+                var iv = Uint8Array.from(atob(encObj.iv), function(c) { return c.charCodeAt(0); });
+                var salt = Uint8Array.from(atob(encObj.salt), function(c) { return c.charCodeAt(0); });
+                var cipher = Uint8Array.from(atob(encObj.cipher), function(c) { return c.charCodeAt(0); });
+                crypto.subtle.importKey('raw', new TextEncoder().encode(pin), {name: 'PBKDF2'}, false, ['deriveKey'])
+                    .then(function(keyMaterial) {
+                        return crypto.subtle.deriveKey(
+                            {name: 'PBKDF2', salt: salt, iterations: 200000, hash: 'SHA-256'},
+                            keyMaterial, {name: 'AES-GCM', length: 256}, false, ['decrypt']
+                        );
+                    })
+                    .then(function(key) {
+                        return crypto.subtle.decrypt({name: 'AES-GCM', iv: iv}, key, cipher);
+                    })
+                    .then(function(plain) { resolve(dec.decode(plain)); })
+                    .catch(reject);
+            });
         }
 
-        async function decryptPoeKey(encObj, pin) {
-            const dec = new TextDecoder();
-            const iv = Uint8Array.from(atob(encObj.iv), c => c.charCodeAt(0));
-            const salt = Uint8Array.from(atob(encObj.salt), c => c.charCodeAt(0));
-            const cipher = Uint8Array.from(atob(encObj.cipher), c => c.charCodeAt(0));
-            const key = await getKeyFromPin(pin, salt);
-            const plain = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, cipher);
-            return dec.decode(plain);
-        }
+        var configScreen = document.getElementById('configScreen');
+        var unlockScreen = document.getElementById('unlockScreen');
+        var mainScreen = document.getElementById('mainScreen');
 
-        // ------- UI Logic -------
-        const configScreen = document.getElementById('configScreen');
-        const unlockScreen = document.getElementById('unlockScreen');
-        const mainScreen = document.getElementById('mainScreen');
-
-        // Check for saved config
-        const storedConfig = localStorage.getItem('receiptTrackerConfig');
+        var storedConfig = localStorage.getItem('receiptTrackerConfig');
         if (!storedConfig) {
-            // First‑time user – show config UI
             configScreen.style.display = 'block';
         } else {
-            // Config exists – ask for PIN
             unlockScreen.style.display = 'block';
         }
 
-        // Save Config button handler
-        document.getElementById('saveConfigBtn').addEventListener('click', async () => {
-            const poeKey = document.getElementById('poeKey').value.trim();
-            const pin = document.getElementById('pin').value.trim();
-            const appsScriptUrl = document.getElementById('appsScriptUrl').value.trim();
-            const secretToken = document.getElementById('secretToken').value.trim();
-
+        document.getElementById('saveConfigBtn').addEventListener('click', function() {
+            var poeKey = document.getElementById('poeKey').value.trim();
+            var pin = document.getElementById('pin').value.trim();
+            var appsScriptUrl = document.getElementById('appsScriptUrl').value.trim();
+            var secretToken = document.getElementById('secretToken').value.trim();
             if (!poeKey || !pin || pin.length !== 6 || !/^[A-Za-z0-9]{6}$/.test(pin)) {
-                showToast('Please provide a valid Poe key and a 6‑character alphanumeric PIN.', 'error');
-                return;
+                showToast('Invalid Poe key or PIN', 'error'); return;
             }
-            if (!appsScriptUrl || !secretToken) {
-                showToast('Apps Script URL and secret token are required.', 'error');
-                return;
-            }
-
-            const enc = await encryptPoeKey(poeKey, pin);
-            const config = {
-                poeKeyEnc: enc,
-                appsScriptUrl,
-                secretToken
-            };
-            localStorage.setItem('receiptTrackerConfig', JSON.stringify(config));
-            // Clear the form fields for security
-            document.getElementById('poeKey').value = '';
-            document.getElementById('pin').value = '';
-            document.getElementById('appsScriptUrl').value = '';
-            document.getElementById('secretToken').value = '';
-            showToast('Configuration saved. Please reload the page.', 'info');
-            configScreen.style.display = 'none';
-        });
-
-        // Unlock button handler
-        document.getElementById('unlockBtn').addEventListener('click', async () => {
-            const pin = document.getElementById('pinUnlock').value.trim();
-            if (!pin) { showToast('Enter PIN', 'error'); return; }
-            const stored = JSON.parse(localStorage.getItem('receiptTrackerConfig'));
-            try {
-                const poeKey = await decryptPoeKey(stored.poeKeyEnc, pin);
-                // Store the plain key in a volatile variable for later phases (do NOT persist)
-                window._poeApiKey = poeKey;
-                unlockScreen.style.display = 'none';
-                mainScreen.style.display = 'block';
-                showToast('Unlocked – ready for next phases.', 'info');
-            } catch (e) {
-                console.error(e);
-                showToast('Incorrect PIN or decryption failed.', 'error');
-            }
-        });
-
-        // ===== PHOTO CAPTURE HANDLERS =====
-        const fileInput = document.getElementById('fileInput');
-        const selectFilesBtn = document.getElementById('selectFilesBtn');
-        const previewGrid = document.getElementById('previewGrid');
-        const reviewPanel = document.getElementById('reviewPanel');
-        const loadingIndicator = document.getElementById('loadingIndicator');
-
-        // Array to store selected files (for later processing)
-        let selectedFiles = [];
-
-        // Show file picker when button clicked
-        selectFilesBtn.addEventListener('click', () => {
-            fileInput.click();
-        });
-
-        // Handle file selection
-        fileInput.addEventListener('change', (e) => {
-            const files = Array.from(e.target.files);
-            // Filter out non-image files and limit to 10 images
-            const validFiles = files.filter(file => file.type.startsWith('image/') && file.size <= 5 * 1024 * 1024);
-            if (validFiles.length === 0) {
-                showToast('No valid images selected (must be PNG/JPG, max 5MB).', 'error');
-                return;
-            }
-            // Add new files to the list (avoid duplicates)
-            validFiles.forEach(file => {
-                if (!selectedFiles.some(f => f.name === file.name && f.size === file.size)) {
-                    selectedFiles.push(file);
-                }
+            if (!appsScriptUrl || !secretToken) { showToast('URL and token required', 'error'); return; }
+            encryptPoeKey(poeKey, pin).then(function(enc) {
+                localStorage.setItem('receiptTrackerConfig', JSON.stringify({poeKeyEnc: enc, appsScriptUrl: appsScriptUrl, secretToken: secretToken}));
+                showToast('Config saved. Reload page.', 'info');
             });
-            renderThumbnails();
-            // Reset input so same files can be selected again if needed
-            fileInput.value = '';
         });
 
-        // Render thumbnails for selected files
-        function renderThumbnails() {
+        document.getElementById('unlockBtn').addEventListener('click', function() {
+            var pin = document.getElementById('pinUnlock').value.trim();
+            if (!pin) { showToast('Enter PIN', 'error'); return; }
+            var stored = JSON.parse(localStorage.getItem('receiptTrackerConfig'));
+            decryptPoeKey(stored.poeKeyEnc, pin)
+                .then(function(poeKey) {
+                    window._poeApiKey = poeKey;
+                    unlockScreen.style.display = 'none';
+                    mainScreen.style.display = 'block';
+                    showToast('Unlocked!', 'info');
+                })
+                .catch(function() { showToast('Wrong PIN', 'error'); });
+        });
+
+        var fileInput = document.getElementById('fileInput');
+        var selectFilesBtn = document.getElementById('selectFilesBtn');
+        var previewGrid = document.getElementById('previewGrid');
+        var selectedFiles = [];
+
+        selectFilesBtn.addEventListener('click', function() { fileInput.click(); });
+        fileInput.addEventListener('change', function(e) {
+            selectedFiles = Array.from(e.target.files).filter(function(f) { return f.type.startsWith('image/') && f.size <= 5*1024*1024; });
             previewGrid.innerHTML = '';
-            selectedFiles.forEach((file, index) => {
-                const item = document.createElement('div');
+            selectedFiles.forEach(function(f, i) {
+                var item = document.createElement('div');
                 item.className = 'preview-item';
-                const img = document.createElement('img');
-                img.id = `thumb-${index}`;
-                img.alt = file.name;
-                img.title = file.name;
-                // Use FileReader to create thumbnail
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    img.src = e.target.result;
-                };
-                reader.readAsDataURL(file);
-                // Delete button
-                const delBtn = document.createElement('button');
-                delBtn.className = 'delete-btn';
-                delBtn.innerHTML = '×';
-                delBtn.title = 'Remove image';
-                delBtn.addEventListener('click', () => {
-                    selectedFiles.splice(index, 1);
-                    renderThumbnails();
-                });
+                var img = document.createElement('img');
+                var reader = new FileReader();
+                reader.onload = function(ev) { img.src = ev.target.result; };
+                reader.readAsDataURL(f);
                 item.appendChild(img);
-                item.appendChild(delBtn);
                 previewGrid.appendChild(item);
             });
-        }
+        });
 
-        // ===== LLM EXTRACTION (Phase 3) =====
-        // Stores extracted receipt objects after extraction
-        let extractedReceipts = [];
+        document.getElementById('extractBtn').addEventListener('click', function() {
+            document.getElementById('loadingIndicator').style.display = 'block';
+            setTimeout(function() {
+                document.getElementById('loadingIndicator').style.display = 'none';
+                document.getElementById('reviewPanel').style.display = 'block';
+                document.getElementById('reviewTableContainer').innerHTML = '<p style="color:#666;">Review table (Phase 4) will be built.</p>';
+            }, 1000);
+        });
 
-        // Build system prompt for receipt extraction
-        function buildSystemPrompt() {
-            return `You are a receipt data extraction assistant. For each receipt image, extract the following fields and return ONLY valid JSON (no markdown, no explanation):
-
-{
-  "description": "What the receipt is for (e.g., \"Dinner at Restaurant ABC\", \"Grocery shopping\")",
-  "amount": "The TOTAL amount shown on the receipt (just the number, not the currency symbol). If no total is clearly shown, estimate from the breakdown.",
-  "currency": "The currency code (HKD, USD, EUR, CNY, JPY, GBP). Infer from the receipt if possible, default to HKD.",
-  "date": "Date on the receipt in YYYY-MM-DD format. If no date is visible, use today's date.",
-  "remarks": "Brief breakdown or notable details (e.g., \"2x Set dinner, 1x drinks\"). Leave empty if nothing notable.",
-  "category": "One of: Food, Transport, Grocery, Shopping, Others"
-}
-
-Rules:
-- Always return valid JSON matching the schema above.
-- amount must be a number (no commas, no currency symbols).
-- category must be exactly one of: Food, Transport, Grocery, Shopping, Others.
-- If the image is not a receipt, return: {"error": "Not a receipt"}
-- Return JSON only, no markdown fences, no text before or after.`;
-        }
-
-        // Build user prompt with base64 image
-        function buildUserPrompt(imageDataUrl) {
-            return {
-                role: 'user',
-                content: [
-                    { type: 'text', text: 'Extract the receipt data from this image. Return JSON only.' },
-                    { type: 'image', source: { type: 'base64', data: imageDataUrl.split(',')[1], media_type: 'image/jpeg' } }
-                ]
-            };
-        }
-
-        // Call Poe API for a single image
-        async function extractSingleReceipt(imageDataUrl) {
-            const poeKey = window._poeApiKey;
-            if (!poeKey) throw new Error('Poe API key not available');
-
-            const response = await fetch('https://api.poe.com/task/async_send_message', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${poeKey}`
-                },
-                body: JSON.stringify({
-                    bot_id: 'claude-3-7-sonnet',
-                    method: 'submit_sensitive_query',
-                    query: [buildUserPrompt(imageDataUrl)],
-                    system_instruction: buildSystemPrompt(),
-                    withStreaming: false,
-                    scientificallyLanugage: 'en'
-                })
-            });
-
-            if (!response.ok) {
-                throw new Error(`Poe API error: ${response.status}`);
-            }
-
-            const data = await response.json();
-            const taskId = data.task_id;
-
-            // Poll for completion (up to 60s)
-            const result = await pollTaskResult(taskId, poeKey);
-            return parseLLMResponse(result);
-        }
-
-        // Poll task result until completion
-        async function pollTaskResult(taskId, poeKey, maxWaitMs = 60000) {
-            const start = Date.now();
-            while (Date.now() - start < maxWaitMs) {
-                await sleep(3000);
-                const res = await fetch('https://api.poe.com/task/async_query_result', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${poeKey}`
-                    },
-                    body: JSON.stringify({ task_id: taskId })
-                });
-                const d = await res.json();
-                if (d.status === 'success') return d;
-                if (d.status === 'failed') throw new Error('LLM task failed');
-            }
-            throw new Error('LLM extraction timed out');
-        }
-
-        // Parse LLM JSON response into a receipt object
-        function parseLLMResponse(result) {
-            const text = result?.data?.message_history?.[result.data.message_history.length - 1]?.content?.[0]?.text;
-            if (!text) throw new Error('No text in LLM response');
-            // Try to extract JSON from the response
-            let jsonStr = text.trim();
-            // Strip markdown fences if present
-            const jsonMatch = jsonStr.match(/\{[\s\S]*\}/);
-            if (!jsonMatch) throw new Error('No JSON found in LLM response');
-            jsonStr = jsonMatch[0];
-            const parsed = JSON.parse(jsonStr);
-            if (parsed.error) throw new Error('LLM reported: ' + parsed.error);
-            return {
-                description: parsed.description || 'Unknown',
-                amount: parseFloat(parsed.amount) || 0,
-                currency: parsed.currency || 'HKD',
-                date: normalizeDate(parsed.date),
-                remarks: parsed.remarks || '',
-                category: normalizeCategory(parsed.category),
-                status: 'pending'
-            };
-        }
-
-        function normalizeDate(dateStr) {
-            if (!dateStr) {
-                // Use today's HKT date
-                return new Date().toLocaleDateString('en-HK', { timeZone: 'Asia/Hong_Kong', year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\//g, '-');
-            }
-            // Try to parse various date formats and return YYYY-MM-DD
-            const d = new Date(dateStr);
-            if (isNaN(d.getTime())) return new Date().toLocaleDateString('en-HK', { timeZone: 'Asia/Hong_Kong', year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\//g, '-');
-            return d.toISOString().split('T')[0];
-        }
-
-        function normalizeCategory(cat) {
-            const valid = ['Food', 'Transport', 'Grocery', 'Shopping', 'Others'];
-            if (valid.includes(cat)) return cat;
-            // Fuzzy match
-            const lower = cat.toLowerCase();
-            if (lower.includes('food') || lower.includes('restaurant') || lower.includes('dinner') || lower.includes('lunch')) return 'Food';
-            if (lower.includes('transport') || lower.includes('taxi') || lower.includes('mrt') || lower.includes('bus')) return 'Transport';
-            if (lower.includes('grocery') || lower.includes('supermarket') || lower.includes('market')) return 'Grocery';
-            if (lower.includes('shop') || lower.includes('cloth') || lower.includes('online')) return 'Shopping';
-            return 'Others';
-        }
-
-        function sleep(ms) {
-            return new Promise(resolve => setTimeout(resolve, ms));
-        }
-
-        // Main extraction function
-        async function extractReceipts() {
-            if (selectedFiles.length === 0) {
-                showToast('No images selected.', 'error');
-                return;
-            }
-            loadingIndicator.style.display = 'block';
-            const progress = document.getElementById('extractProgress');
-            extractBtn.style.display = 'none';
-            extractedReceipts = [];
-
-            try {
-                for (let i = 0; i < selectedFiles.length; i++) {
-                    progress.textContent = `Processing image ${i + 1} of ${selectedFiles.length}...`;
-                    const file = selectedFiles[i];
-                    const dataUrl = await fileToDataUrl(file);
-                    try {
-                        const receipt = await extractSingleReceipt(dataUrl);
-                        receipt.id = `receipt-${Date.now()}-${i}`;
-                        receipt.imageDataUrl = dataUrl;
-                        extractedReceipts.push(receipt);
-                    } catch (err) {
-                        console.error(`Failed to extract image ${i}:`, err);
-                        // Add a blank entry so user can fill manually
-                        extractedReceipts.push({
-                            id: `receipt-${Date.now()}-${i}`,
-                            description: '',
-                            amount: 0,
-                            currency: 'HKD',
-                            date: normalizeDate(null),
-                            remarks: '(Extraction failed – please fill manually)',
-                            category: 'Others',
-                            imageDataUrl: dataUrl,
-                            status: 'pending'
-                        });
-                    }
-                }
-                loadingIndicator.style.display = 'none';
-                reviewPanel.style.display = 'block';
-                renderReviewTable();
-                showToast(`Extracted ${extractedReceipts.length} receipt(s).`, 'info');
-            } catch (err) {
-                loadingIndicator.style.display = 'none';
-                extractBtn.style.display = '';
-                showToast('Extraction failed: ' + err.message, 'error');
-            }
-        }
-
-        function fileToDataUrl(file) {
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onload = e => resolve(e.target.result);
-                reader.onerror = reject;
-                reader.readAsDataURL(file);
-            });
-        }
-
-        // ===== REVIEW TABLE (Phase 4) =====
-        function renderReviewTable() {
-            const container = document.getElementById('reviewTableContainer');
-            if (!extractedReceipts.length) { container.innerHTML = ''; return; }
-            
-            const table = document.createElement('table');
-            table.style.width = '100%';
-            table.style.borderCollapse = 'collapse';
-            table.style.background = '#fff';
-            table.style.borderRadius = '6px';
-            table.style.overflow = 'hidden';
-            table.style.boxShadow = '0 1px 3px rgba(0,0,0,0.1)';
-            
-            // Table header
-            const header = document.createElement('thead');
-            header.style.background = '#f8f9fa';
-            header.style.borderBottom = '1px solid #dee2e6';
-            const headerRow = document.createElement('tr');
-            const headers = ['Image', 'Description', 'Amount', 'Currency', 'Date', 'Category', 'Remarks', ''];
-            headers.forEach(text => {
-                const th = document.createElement('th');
-                th.textContent = text;
-                th.style.padding = '12px';
-                th.style.textAlign = text === 'Image' ? 'center' : 'left';
-                th.style.fontSize = '14px';
-                th.style.fontWeight = '600';
-                th.style.color = '#495057';
-                headerRow.appendChild(th);
-            });
-            header.appendChild(headerRow);
-            table.appendChild(header);
-            
-            // Table body
-            const tbody = document.createElement('tbody');
-            extractedReceipts.forEach((receipt, index) => {
-                const row = document.createElement('tr');
-                row.style.borderBottom = '1px solid #f1f3f5';
-                
-                // Image thumbnail
-                const tdImage = document.createElement('td');
-                tdImage.style.padding = '8px';
-                tdImage.style.textAlign = 'center';
-                const img = document.createElement('img');
-                img.src = receipt.imageDataUrl;
-                img.style.width = '60px';
-                img.style.height = 'auto';
-                img.style.borderRadius = '4px';
-                img.style.cursor = 'pointer';
-                img.title = 'Click to enlarge';
-                img.addEventListener('click', () => enlargeImage(receipt.imageDataUrl));
-                tdImage.appendChild(img);
-                row.appendChild(tdImage);
-                
-                // Description
-                const tdDesc = document.createElement('td');
-                tdDesc.style.padding = '8px';
-                const descInput = document.createElement('input');
-                descInput.type = 'text';
-                descInput.value = receipt.description;
-                descInput.style.width = '100%';
-                descInput.style.border = '1px solid #ced4da';
-                descInput.style.borderRadius = '4px';
-                descInput.style.padding = '6px 8px';
-                descInput.style.fontSize = '14px';
-                descInput.addEventListener('change', (e) => {
-                    receipt.description = e.target.value;
-                });
-                tdDesc.appendChild(descInput);
-                row.appendChild(tdDesc);
-                
-                // Amount
-                const tdAmount = document.createElement('td');
-                tdAmount.style.padding = '8px';
-                const amountInput = document.createElement('input');
-                amountInput.type = 'number';
-                amountInput.step = '0.01';
-                amountInput.value = receipt.amount;
-                amountInput.style.width = '100px';
-                amountInput.style.border = '1px solid #ced4da';
-                amountInput.style.borderRadius = '4px';
-                amountInput.style.padding = '6px 8px';
-                amountInput.style.fontSize = '14px';
-                amountInput.addEventListener('change', (e) => {
-                    receipt.amount = parseFloat(e.target.value) || 0;
-                });
-                tdAmount.appendChild(amountInput);
-                row.appendChild(tdAmount);
-                
-                // Currency
-                const tdCurrency = document.createElement('td');
-                tdCurrency.style.padding = '8px';
-                const currencySelect = document.createElement('select');
-                const currencies = ['HKD', 'USD', 'EUR', 'CNY', 'JPY', 'GBP'];
-                currencies.forEach(cur => {
-                    const opt = document.createElement('option');
-                    opt.value = cur;
-                    opt.textContent = cur;
-                    opt.selected = cur === receipt.currency;
-                    currencySelect.appendChild(opt);
-                });
-                currencySelect.style.width = '80px';
-                currencySelect.style.border = '1px solid #ced4da';
-                currencySelect.style.borderRadius = '4px';
-                currencySelect.style.padding = '6px 8px';
-                currencySelect.style.fontSize = '14px';
-                currencySelect.addEventListener('change', (e) => {
-                    receipt.currency = e.target.value;
-                });
-                tdCurrency.appendChild(currencySelect);
-                row.appendChild(tdCurrency);
-                
-                // Date
-                const tdDate = document.createElement('td');
-                tdDate.style.padding = '8px';
-                const dateInput = document.createElement('input');
-                dateInput.type = 'date';
-                dateInput.value = receipt.date;
-                dateInput.style.width = '120px';
-                dateInput.style.border = '1px solid #ced4da';
-                dateInput.style.borderRadius = '4px';
-                dateInput.style.padding = '6px 8px';
-                dateInput.style.fontSize = '14px';
-                dateInput.addEventListener('change', (e) => {
-                    receipt.date = e.target.value;
-                });
-                tdDate.appendChild(dateInput);
-                row.appendChild(tdDate);
-                
-                // Category
-                const tdCategory = document.createElement('td');
-                tdCategory.style.padding = '8px';
-                const categorySelect = document.createElement('select');
-                const categories = ['Food', 'Transport', 'Grocery', 'Shopping', 'Others'];
-                categories.forEach(cat => {
-                    const opt = document.createElement('option');
-                    opt.value = cat;
-                    opt.textContent = cat;
-                    opt.selected = cat === receipt.category;
-                    categorySelect.appendChild(opt);
-                });
-                categorySelect.style.width = '100px';
-                categorySelect.style.border = '1px solid #ced4da';
-                categorySelect.style.borderRadius = '4px';
-                categorySelect.style.padding = '6px 8px';
-                categorySelect.style.fontSize = '14px';
-                categorySelect.addEventListener('change', (e) => {
-                    receipt.category = e.target.value;
-                });
-                tdCategory.appendChild(categorySelect);
-                row.appendChild(tdCategory);
-                
-                // Remarks
-                const tdRemarks = document.createElement('td');
-                tdRemarks.style.padding = '8px';
-                const remarksInput = document.createElement('input');
-                remarksInput.type = 'text';
-                remarksInput.value = receipt.remarks;
-                remarksInput.style.width = '100%';
-                remarksInput.style.border = '1px solid #ced4da';
-                remarksInput.style.borderRadius = '4px';
-                remarksInput.style.padding = '6px 8px';
-                remarksInput.style.fontSize = '14px';
-                remarksInput.addEventListener('change', (e) => {
-                    receipt.remarks = e.target.value;
-                });
-                tdRemarks.appendChild(remarksInput);
-                row.appendChild(tdRemarks);
-                
-                // Delete button
-                const tdDelete = document.createElement('td');
-                tdDelete.style.padding = '8px';
-                tdDelete.style.textAlign = 'center';
-                const deleteBtn = document.createElement('button');
-                deleteBtn.innerHTML = '×';
-                deleteBtn.className = 'btn-primary';
-                deleteBtn.style.background = '#dc3545';
-                deleteBtn.style.width = '30px';
-                deleteBtn.style.height = '30px';
-                deleteBtn.style.display = 'flex';
-                deleteBtn.style.alignItems = 'center';
-                deleteBtn.style.justifyContent = 'center';
-                deleteBtn.style.margin = '0';
-                deleteBtn.addEventListener('click', () => {
-                    extractedReceipts.splice(index, 1);
-                    renderReviewTable();
-                    showToast('Receipt removed.', 'info');
-                });
-                tdDelete.appendChild(deleteBtn);
-                row.appendChild(tdDelete);
-                
-                tbody.appendChild(row);
-            });
-            
-            table.appendChild(tbody);
-            container.innerHTML = '';
-            container.appendChild(table);
-            
-            // Add button for manual entry
-            const addRowBtn = document.createElement('button');
-            addRowBtn.className = 'btn-primary';
-            addRowBtn.style.marginTop = '15px';
-            addRowBtn.style.background = '#28a745';
-            addRowBtn.innerHTML = '<i style="margin-right: 8px;">+</i> Add Manual Receipt';
-            addRowBtn.addEventListener('click', addManualReceipt);
-            container.appendChild(addRowBtn);
-        }
-        
-        // Add a manual receipt row
-        function addManualReceipt() {
-            const today = new Date().toLocaleDateString('en-HK', { timeZone: 'Asia/Hong_Kong', year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\//g, '-');
-            extractedReceipts.push({
-                id: `manual-${Date.now()}`,
-                description: '',
-                amount: 0,
-                currency: 'HKD',
-                date: today,
-                remarks: '',
-                category: 'Others',
-                imageDataUrl: null,
-                status: 'pending'
-            });
-            renderReviewTable();
-            showToast('Added manual receipt row.', 'info');
-        }
-        
-        // Lightbox for enlarging images
-        function enlargeImage(imageUrl) {
-            const overlay = document.createElement('div');
-            overlay.style.position = 'fixed';
-            overlay.style.top = '0';
-            overlay.style.left = '0';
-            overlay.style.width = '100%';
-            overlay.style.height = '100%';
-            overlay.style.backgroundColor = 'rgba(0,0,0,0.8)';
-            overlay.style.zIndex = '9999';
-            overlay.style.display = 'flex';
-            overlay.style.alignItems = 'center';
-            overlay.style.justifyContent = 'center';
-            
-            const img = document.createElement('img');
-            img.src = imageUrl;
-            img.style.maxWidth = '90%';
-            img.style.maxHeight = '90%';
-            img.style.objectFit = 'contain';
-            
-            overlay.addEventListener('click', (e) => {
-                if (e.target === overlay) overlay.remove();
-            });
-            
-            document.body.appendChild(overlay);
-        }
-
-        // ===== EXTRACT BUTTON =====
-        const extractBtn = document.getElementById('extractBtn');
-        extractBtn.addEventListener('click', extractReceipts);
-
-        // ===== GOOGLE APPS SCRIPT INTEGRATION (Phase 5) =====
-        const confirmBtn = document.getElementById('confirmBtn');
-        confirmBtn.addEventListener('click', saveAllReceipts);
-
-        // Get today's HKT date in YYYYMMDD format (for Drive folder)
-        function getHKTDateYYYYMMDD() {
-            return new Date().toLocaleDateString('en-HK', { timeZone: 'Asia/Hong_Kong', year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\//g, '');
-        }
-
-        // Build request payload
-        function buildPayload(action, data) {
-            const stored = JSON.parse(localStorage.getItem('receiptTrackerConfig'));
-            return {
-                token: stored.secretToken,
-                action: action,
-                data: data
-            };
-        }
-
-        // Handle Apps Script errors gracefully
-        function handleAppError(res) {
-            if (!res.ok) {
-                if (res.status === 403) throw new Error('Invalid token – check your secret token in settings.');
-                if (res.status === 404) throw new Error('Apps Script URL not found – check your URL in settings.');
-                throw new Error(`Server error: ${res.status}`);
-            }
-            return res.json();
-        }
-
-        // Upload a single image to Google Drive
-        async function uploadImageToDrive(imageDataUrl, filename, folderDate) {
-            const stored = JSON.parse(localStorage.getItem('receiptTrackerConfig'));
-            const url = stored.appsScriptUrl;
-
-            const payload = buildPayload('uploadImage', {
-                filename: filename,
-                imageBase64: imageDataUrl,
-                folderDate: folderDate
-            });
-
-            const res = await fetch(url, {
-                method: 'POST',
-                body: JSON.stringify(payload),
-                headers: { 'Content-Type': 'application/json' }
-            });
-
-            const json = await handleAppError(res);
-            return json.fileUrl || json.url;
-        }
-
-        // Save all receipt records to Google Sheet
-        async function saveReceiptsToSheet(receiptRecords) {
-            const stored = JSON.parse(localStorage.getItem('receiptTrackerConfig'));
-            const url = stored.appsScriptUrl;
-
-            const payload = buildPayload('saveReceipts', {
-                receipts: receiptRecords
-            });
-
-            const res = await fetch(url, {
-                method: 'POST',
-                body: JSON.stringify(payload),
-                headers: { 'Content-Type': 'application/json' }
-            });
-
-            const json = await handleAppError(res);
-            return json;
-        }
-
-        // Main save orchestrator – uploads all images, then saves records
-        async function saveAllReceipts() {
-            if (!extractedReceipts.length) {
-                showToast('No receipts to save.', 'error');
-                return;
-            }
-
-            // Validate all receipts have required fields
-            const invalid = extractedReceipts.filter(r => !r.description || r.amount === 0);
-            if (invalid.length > 0) {
-                showToast(`Please fill in description and amount for all receipts (${invalid.length} remaining).`, 'error');
-                return;
-            }
-
-            confirmBtn.disabled = true;
-            confirmBtn.textContent = 'Saving... please wait';
-            const savingMsg = document.createElement('p');
-            savingMsg.id = 'savingProgress';
-            savingMsg.style.fontSize = '13px';
-            savingMsg.style.color = '#555';
-            savingMsg.style.marginTop = '8px';
-            savingMsg.textContent = 'Uploading images to Google Drive... 0%';
-            confirmBtn.parentElement.appendChild(savingMsg);
-
-            try {
-                const folderDate = getHKTDateYYYYMMDD();
-                const receiptRecords = [];
-
-                // Step 1: Upload all images to Drive
-                for (let i = 0; i < extractedReceipts.length; i++) {
-                    const r = extractedReceipts[i];
-                    savingMsg.textContent = `Uploading images to Google Drive... ${Math.round((i / extractedReceipts.length) * 50)}%`;
-
-                    if (r.imageDataUrl) {
-                        const timestamp = Date.now();
-                        const filename = `receipt_${folderDate}_${String(i + 1).padStart(3, '0')}.jpg`;
-                        try {
-                            r.driveUrl = await uploadImageToDrive(r.imageDataUrl, filename, folderDate);
-                        } catch (err) {
-                            console.error('Image upload failed for', r.id, err);
-                            r.driveUrl = '';
-                        }
-                    } else {
-                        r.driveUrl = '';
-                    }
-
-                    // Build record for Sheet
-                    receiptRecords.push({
-                        date: r.date,
-                        description: r.description,
-                        amount: r.amount,
-                        currency: r.currency,
-                        category: r.category,
-                        remarks: r.remarks,
-                        imageUrl: r.driveUrl || ''
-                    });
-                }
-
-                // Step 2: Save all records to Google Sheet
-                savingMsg.textContent = 'Saving receipts to Google Sheet... 60%';
-                const result = await saveReceiptsToSheet(receiptRecords);
-
-                savingMsg.textContent = 'Done! 100%';
-                confirmBtn.textContent = 'Saved! ';
-                confirmBtn.style.background = '#28a745';
-
-                // Reset after 3s
-                setTimeout(() => {
-                    confirmBtn.textContent = 'Confirm & Save';
-                    confirmBtn.style.background = '';
-                    confirmBtn.disabled = false;
-                    savingMsg.remove();
-                    showToast(`' ${extractedReceipts.length} receipt(s) saved to Google Drive/Sheet!', 'info');
-                }, 2000);
-
-            } catch (err) {
-                confirmBtn.disabled = false;
-                confirmBtn.textContent = 'Confirm & Save';
-                if (savingMsg) savingMsg.remove();
-                showToast('Save failed: ' + err.message, 'error');
-            }
-        }
-
+        document.getElementById('confirmBtn').addEventListener('click', function() {
+            showToast('Confirm clicked. Phase 5 handler coming.', 'info');
+        });
     </script>
 </body>
 </html>

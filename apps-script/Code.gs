@@ -3,7 +3,7 @@
 // ============================================================
 // SETUP: Replace with your secret token (same one used in index.html)
 // Keep this 20+ characters, random string
-const SECRET_TOKEN = "REPLACE_WITH_YOUR_SECRET_TOKEN";
+const SECRET_TOKEN = "8D6@6*P$WctFMnw8jHEr";
 
 // Folder name in Google Drive where receipts are stored
 const RECEIPTS_FOLDER = "receipts";

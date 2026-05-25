@@ -1420,13 +1420,13 @@ async function saveReceipts() {
       // Write to Sheet
       await writeToSheet({
         date: r.date || today,
-        vendor: r.vendor,
+        description: r.vendor, // field is 'description' in Apps Script
         amount: r.amount,
         currency: r.currency,
         category: r.category,
         remarks: r.remarks,
         filename: filename,
-        driveUrl: uploadResult.url
+        imageUrl: uploadResult.url // field is 'imageUrl' in Apps Script
       });
       
       successCount++;
@@ -1466,8 +1466,11 @@ async function uploadToDrive(dataUrl, filename) {
     body: JSON.stringify({
       token: config.secretToken,
       action: 'uploadImage',
-      filename: filename,
-      imageBase64: base64
+      data: {
+        filename: filename,
+        imageBase64: base64,
+        folderDate: today
+      }
     })
   });
   
@@ -1476,7 +1479,7 @@ async function uploadToDrive(dataUrl, filename) {
     throw new Error(result.error || 'Upload failed');
   }
   
-  return { url: result.url };
+  return { url: result.fileUrl };
 }
 
 async function writeToSheet(data) {
@@ -1485,15 +1488,16 @@ async function writeToSheet(data) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       token: config.secretToken,
-      action: 'saveReceipt',
-      date: data.date,
-      vendor: data.vendor,
-      amount: data.amount,
-      currency: data.currency,
-      category: data.category,
-      remarks: data.remarks,
-      filename: data.filename,
-      driveUrl: data.driveUrl
+      action: 'saveReceipts',
+      data: { receipts: [{
+        date: data.date,
+        description: data.description,
+        amount: parseFloat(data.amount) || 0,
+        currency: data.currency || 'HKD',
+        category: data.category || 'Other',
+        remarks: data.remarks || '',
+        imageUrl: data.imageUrl || ''
+      }] }
     })
   });
   

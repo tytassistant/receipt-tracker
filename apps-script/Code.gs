@@ -214,7 +214,7 @@ function handleQueryReceipts(data) {
     for (var i = 0; i < allData.length; i++) {
       var row = allData[i];
       var recordNo = row[0];
-      var date = row[1];       // Column B: Date (YYYY-MM-DD string)
+      var dateCell = row[1];       // Column B: Date (Date object or string)
       var description = row[4]; // Column E: Description
       var amount = parseFloat(row[5]) || 0; // Column F: Amount
       var currency = row[6];    // Column G: Currency
@@ -222,6 +222,17 @@ function handleQueryReceipts(data) {
       var remarks = row[8];    // Column I: Remarks
       var imageName = row[9];  // Column J: Image_name
       var imageUrl = row[10];  // Column K: Image_URL
+
+      // Convert date to YYYY-MM-DD string (handles both Date objects and strings)
+      var date;
+      if (dateCell instanceof Date) {
+        var d = dateCell;
+        date = d.getFullYear() + "-" + 
+               ("0" + (d.getMonth() + 1)).slice(-2) + "-" + 
+               ("0" + d.getDate()).slice(-2);
+      } else {
+        date = String(dateCell);
+      }
 
       // Check if date is within range (inclusive)
       if (date && date >= startDate && date <= endDate) {

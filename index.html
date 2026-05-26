@@ -1450,7 +1450,7 @@ async function saveReceipts() {
         currency: r.currency,
         category: r.category,
         remarks: r.remarks,
-        filename: filename,
+        imageName: uploadResult.filename, // timestamped filename from server
         imageUrl: uploadResult.url // field is 'imageUrl' in Apps Script
       });
       
@@ -1523,7 +1523,7 @@ async function uploadToDrive(dataUrl, filename, folderDate) {
     throw new Error('Apps Script uploadImage error: ' + detail);
   }
   
-  return { url: result.fileUrl };
+  return { url: result.fileUrl, filename: result.filename };
 }
 
 async function writeToSheet(data) {
@@ -1542,6 +1542,7 @@ async function writeToSheet(data) {
           currency: data.currency || 'HKD',
           category: data.category || 'Other',
           remarks: data.remarks || '',
+          imageName: data.imageName || '',
           imageUrl: data.imageUrl || ''
         }] }
       })

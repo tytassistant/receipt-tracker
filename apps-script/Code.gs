@@ -19,7 +19,8 @@ const COLUMNS = [
   "Currency",     // G: From receipt data
   "Category",     // H: From receipt data
   "Remarks",      // I: From receipt data
-  "Image_URL"     // J: From upload result
+  "Image_name",   // J: Uploaded image filename (YYYYMMDD_HHmmSS_originalname)
+  "Image_URL"     // K: Google Drive URL to the image
 ];
 
 // ============================================================
@@ -84,15 +85,21 @@ function handleUploadImage(data) {
   var blob = Utilities.base64Decode(cleanBase64);
   var mimeType = detectMimeType(filename, cleanBase64);
 
+  // Generate HKT timestamp filename: YYYYMMDD_HHmmSS_originalname
+  var now = new Date();
+  var hktTimestamp = formatHKTCompact(now); // YYYYMMDD_HHmmSS
+  var safeOriginalName = filename.replace(/[^a-zA-Z0-9._-]/g, "_");
+  var timestampedFilename = hktTimestamp + "_" + safeOriginalName;
+
   // Get or create the date folder inside /receipt-tracker/
   var folder = getOrCreateReceiptFolder(folderDate);
 
-  // Create and save the file
-  var file = folder.createFile(Utilities.newBlob(blob, mimeType, filename));
+  // Create and save the file with timestamped name
+  var file = folder.createFile(Utilities.newBlob(blob, mimeType, timestampedFilename));
 
   return jsonResponse(200, {
     success: true,
-    filename: filename,
+    filename: timestampedFilename,
     fileUrl: file.getUrl(),
     fileId: file.getId(),
     folderUrl: folder.getUrl()
@@ -149,6 +156,7 @@ function handleSaveReceipts(data) {
       r.currency || "HKD", // Currency
       r.category || "Others", // Category
       r.remarks || "",     // Remarks
+      r.imageName || "",   // Image_name (timestamped filename)
       r.imageUrl || ""     // Image_URL
     ];
 
@@ -268,6 +276,11 @@ function getOrCreateSheet() {
 // Format date to HKT (GMT+8): "YYYY-MM-DD HH:mm:ss"
 function formatHKT(date) {
   return Utilities.formatDate(date, "GMT+8", "yyyy-MM-dd HH:mm:ss");
+}
+
+// Format date to HKT compact: "YYYYMMDD_HHmmSS" for filenames
+function formatHKTCompact(date) {
+  return Utilities.formatDate(date, "GMT+8", "yyyyMMdd_HHmmss");
 }
 
 // Format date to YYYYMMDD for folder names

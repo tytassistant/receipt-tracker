@@ -144,22 +144,30 @@ function handleSaveReceipts(data) {
     }
   }
 
+  // Parse date string to Date object for sheet storage
+  function parseDateStringToObject(dateStr) {
+    if (!dateStr) return new Date(); // Default to today if empty
+    if (dateStr instanceof Date) return dateStr;
+    var parts = dateStr.split('-');
+    return new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+  }
+
   for (var i = 0; i < receipts.length; i++) {
     var r = receipts[i];
     var recordNo = lastRecordNo + i + 1;
 
     var row = [
-      recordNo,             // Record_no
-      r.date || "",        // Date
-      createdAt,           // Created_at (HKT)
-      modifiedAt,          // Modified_at (HKT) — same on insert
-      r.description || "", // Description
-      parseFloat(r.amount) || 0, // Amount
-      r.currency || "HKD", // Currency
-      r.category || "Others", // Category
-      r.remarks || "",     // Remarks
-      r.imageName || "",   // Image_name (timestamped filename)
-      r.imageUrl || ""     // Image_URL
+      recordNo,                       // Record_no
+      parseDateStringToObject(r.date), // Date as Date object
+      createdAt,                      // Created_at (HKT)
+      modifiedAt,                     // Modified_at (HKT) — same on insert
+      r.description || "",            // Description
+      parseFloat(r.amount) || 0,      // Amount
+      r.currency || "HKD",           // Currency
+      r.category || "Others",        // Category
+      r.remarks || "",                // Remarks
+      r.imageName || "",             // Image_name (timestamped filename)
+      r.imageUrl || ""              // Image_URL
     ];
 
     sheet.appendRow(row);
@@ -192,6 +200,24 @@ function handleGetFolder(data) {
 // data: { startDate: 'YYYY-MM-DD', endDate: 'YYYY-MM-DD' }
 // Returns: { success: true, receipts: [...], totalAmount: number }
 // ============================================================
+// Parse YYYY-MM-DD string to Date object (at midnight in local timezone)
+function parseDateInput(dateStr) {
+  if (!dateStr) return null;
+  if (dateStr instanceof Date) return dateStr;
+  var parts = dateStr.split('-');
+  return new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+}
+
+// Format Date object to YYYY-MM-DD string for JSON response
+function formatDateForResponse(dateObj) {
+  if (!dateObj) return '';
+  if (!(dateObj instanceof Date)) return String(dateObj);
+  var y = dateObj.getFullYear();
+  var m = ('0' + (dateObj.getMonth() + 1)).slice(-2);
+  var d = ('0' + dateObj.getDate()).slice(-2);
+  return y + '-' + m + '-' + d;
+}
+
 function handleQueryReceipts(data) {
   var startDate = data.startDate;
   var endDate = data.endDate;
@@ -199,6 +225,12 @@ function handleQueryReceipts(data) {
   if (!startDate || !endDate) {
     return jsonResponse(400, { error: "startDate and endDate are required (YYYY-MM-DD format)" });
   }
+
+  // Parse input strings to Date objects for comparison
+  var startDateObj = parseDateInput(startDate);
+  var endDateObj = parseDateInput(endDate);
+  // Set end date to end of day for inclusive comparison
+  endDateObj.setHours(23, 59, 59, 999);
 
   var sheet = getOrCreateSheet();
   var lastRow = sheet.getLastRow();
@@ -214,7 +246,7 @@ function handleQueryReceipts(data) {
     for (var i = 0; i < allData.length; i++) {
       var row = allData[i];
       var recordNo = row[0];
-      var dateCell = row[1];       // Column B: Date (Date object or string)
+      var dateCell = row[1];       // Column B: Date (Date object from sheet)
       var description = row[4]; // Column E: Description
       var amount = parseFloat(row[5]) || 0; // Column F: Amount
       var currency = row[6];    // Column G: Currency
@@ -223,22 +255,13 @@ function handleQueryReceipts(data) {
       var imageName = row[9];  // Column J: Image_name
       var imageUrl = row[10];  // Column K: Image_URL
 
-      // Convert date to YYYY-MM-DD string (handles both Date objects and strings)
-      var date;
-      if (dateCell instanceof Date) {
-        var d = dateCell;
-        date = d.getFullYear() + "-" + 
-               ("0" + (d.getMonth() + 1)).slice(-2) + "-" + 
-               ("0" + d.getDate()).slice(-2);
-      } else {
-        date = String(dateCell);
-      }
-
-      // Check if date is within range (inclusive)
-      if (date && date >= startDate && date <= endDate) {
+      // Compare Date objects directly for accurate range check
+      if (dateCell instanceof Date && 
+          dateCell.getTime() >= startDateObj.getTime() && 
+          dateCell.getTime() <= endDateObj.getTime()) {
         receipts.push({
           recordNo: recordNo,
-          date: date,
+          date: formatDateForResponse(dateCell),  // Return as YYYY-MM-DD string
           description: description,
           amount: amount,
           currency: currency,

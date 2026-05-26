@@ -107,10 +107,15 @@ function handleSaveReceipts(data) {
   var receipts = data.receipts;
 
   if (!receipts || !Array.isArray(receipts) || receipts.length === 0) {
+    Logger.log("ERROR: receipts array is missing or empty");
     return jsonResponse(400, { error: "receipts array is required" });
   }
 
+  Logger.log("Saving " + receipts.length + " receipt(s)");
+  Logger.log("First receipt data: " + JSON.stringify(receipts[0]));
+
   var sheet = getOrCreateSheet();
+  Logger.log("Sheet opened: " + sheet.getName() + " in " + sheet.getParent().getName());
   var now = new Date();
   var createdAt = formatHKT(now);
   var modifiedAt = formatHKT(now);
@@ -202,6 +207,7 @@ function getOrCreateReceiptFolder(folderDate) {
 // Creates INSIDE the receipt-tracker folder, no duplicates
 function getOrCreateSheet() {
   var root = getOrCreateRootFolder();
+  Logger.log("Root folder: " + root.getName() + " (" + root.getId() + ")");
 
   // Search for existing spreadsheet by name (Google Sheets — no file extension)
   var files = root.getFilesByName(SPREADSHEET_NAME);
@@ -210,32 +216,46 @@ function getOrCreateSheet() {
   if (files.hasNext()) {
     // Found existing spreadsheet — open it
     var file = files.next();
+    Logger.log("Found existing spreadsheet: " + file.getName() + " (" + file.getId() + ")");
     spreadsheet = SpreadsheetApp.openById(file.getId());
   } else {
     // Create new spreadsheet inside the receipt-tracker folder
+    Logger.log("Creating new spreadsheet: " + SPREADSHEET_NAME);
     var ssId = SpreadsheetApp.create(SPREADSHEET_NAME).getId();
     var file = DriveApp.getFileById(ssId);
+    Logger.log("Created spreadsheet ID: " + ssId);
 
     // Move file into the receipts folder
     root.addFile(file);
+    Logger.log("Added file to root folder");
     DriveApp.getRootFolder().removeFile(file);
+    Logger.log("Removed file from root");
 
     spreadsheet = SpreadsheetApp.openById(ssId);
   }
 
   // Get or create the "Receipts" sheet tab
   var sheetName = "Receipts";
-  var sheet = spreadsheet.getSheetByName(sheetName)
-               || spreadsheet.insertSheet(sheetName);
+  var sheet = spreadsheet.getSheetByName(sheetName);
+  if (!sheet) {
+    Logger.log("Creating new sheet tab: " + sheetName);
+    sheet = spreadsheet.insertSheet(sheetName);
+  } else {
+    Logger.log("Found existing sheet tab: " + sheetName);
+  }
 
-  // Add header row if sheet is empty
-  if (sheet.getLastRow() === 0) {
+  Logger.log("Sheet row count: " + sheet.getLastRow());
+
+  // Add header row if sheet is empty (no rows, or only header row without data)
+  if (sheet.getLastRow() === 0 || (sheet.getLastRow() === 1 && sheet.getRange(1, 1).getValue() === "")) {
+    Logger.log("Adding header row");
     sheet.getRange(1, 1, 1, COLUMNS.length).setValues([COLUMNS]);
 
     // Style header row
     var headerRange = sheet.getRange(1, 1, 1, COLUMNS.length);
     headerRange.setBackground("#f8f9fa").setFontWeight("bold");
     spreadsheet.setFrozenRows(1);
+    Logger.log("Header row added");
   }
 
   return sheet;

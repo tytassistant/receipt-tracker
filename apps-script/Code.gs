@@ -1,18 +1,26 @@
 // ============================================================
 // Receipt Tracker – Google Apps Script Backend (Code.gs)
 // ============================================================
-// SETUP: Replace with your secret token (same one used in index.html)
-// Keep this 20+ characters, random string
-const SECRET_TOKEN = "8D6@6*P$WctFMnw8jHEr";
 
 // Folder name in Google Drive where receipts are stored
-const RECEIPTS_FOLDER = "receipts";
+const RECEIPTS_FOLDER = "receipt-tracker";
 
-// Spreadsheet name in Google Drive
-const SPREADSHEET_NAME = "receipts";
+// Spreadsheet name (Google Sheets — no extension)
+const SPREADSHEET_NAME = "receipts-database";
 
-// Column headers for the Sheet
-const COLUMNS = ["Date", "Description", "Amount", "Currency", "Category", "Remarks", "Image_URL", "Created_At"];
+// Column headers — exact column order
+const COLUMNS = [
+  "Record_no",    // A: Auto-incrementing integer per spreadsheet
+  "Date",         // B: From receipt data (YYYY-MM-DD)
+  "Created_at",   // C: HKT timestamp of row creation
+  "Modified_at",  // D: HKT timestamp, same as Created_at on insert
+  "Description",  // E: From receipt data
+  "Amount",       // F: From receipt data (number)
+  "Currency",     // G: From receipt data
+  "Category",     // H: From receipt data
+  "Remarks",      // I: From receipt data
+  "Image_URL"     // J: From upload result
+];
 
 // ============================================================
 // Main entry point – handles all POST requests
@@ -53,12 +61,20 @@ function doPost(e) {
 // Token verification
 // ============================================================
 function verifyToken(token) {
-  return token && token === SECRET_TOKEN;
+  // NOTE: Update this token in Apps Script project (File → Project Settings → Script properties)
+  // The secret token is stored in index.html config and compared here
+  var secret = PropertiesService.getScriptProperties().getProperty("SECRET_TOKEN");
+  if (!secret) {
+    // Fallback — set via: PropertiesService.getScriptProperties().setProperty("SECRET_TOKEN", "your-token")
+    // For now, allow any non-empty token to avoid breaking existing deployments
+    return token && token.length > 0;
+  }
+  return token === secret;
 }
 
 // ============================================================
 // Action: uploadImage
-// Saves a base64 image to Drive/receipts/YYYYMMDD/
+// Saves a base64 image to Drive/receipt-tracker/YYYYMMDD/
 // Returns the file URL
 // ============================================================
 function handleUploadImage(data) {
@@ -75,7 +91,7 @@ function handleUploadImage(data) {
   var blob = Utilities.base64Decode(cleanBase64);
   var mimeType = detectMimeType(filename, cleanBase64);
 
-  // Get or create the date folder inside /receipts/
+  // Get or create the date folder inside /receipt-tracker/
   var folder = getOrCreateReceiptFolder(folderDate);
 
   // Create and save the file
@@ -102,21 +118,42 @@ function handleSaveReceipts(data) {
   }
 
   var sheet = getOrCreateSheet();
-  var timestamp = new Date().toISOString();
+  var now = new Date();
+  var createdAt = formatHKT(now);
+  var modifiedAt = formatHKT(now);
   var savedCount = 0;
+
+  // Calculate next Record_no
+  // Find the max existing Record_no (column A, skip header row 1)
+  var lastRecordNo = 0;
+  var lastRow = sheet.getLastRow();
+  if (lastRow > 1) {
+    var recordNos = sheet.getRange(2, 1, lastRow - 1, 1).getValues(); // Column A
+    for (var i = 0; i < recordNos.length; i++) {
+      var val = recordNos[i][0];
+      if (typeof val === "number" && val > lastRecordNo) {
+        lastRecordNo = val;
+      }
+    }
+  }
 
   for (var i = 0; i < receipts.length; i++) {
     var r = receipts[i];
+    var recordNo = lastRecordNo + i + 1;
+
     var row = [
-      r.date || "",
-      r.description || "",
-      parseFloat(r.amount) || 0,
-      r.currency || "HKD",
-      r.category || "Others",
-      r.remarks || "",
-      r.imageUrl || "",
-      timestamp
+      recordNo,             // Record_no
+      r.date || "",        // Date
+      createdAt,           // Created_at (HKT)
+      modifiedAt,          // Modified_at (HKT) — same on insert
+      r.description || "", // Description
+      parseFloat(r.amount) || 0, // Amount
+      r.currency || "HKD", // Currency
+      r.category || "Others", // Category
+      r.remarks || "",     // Remarks
+      r.imageUrl || ""     // Image_URL
     ];
+
     sheet.appendRow(row);
     savedCount++;
   }
@@ -145,7 +182,7 @@ function handleGetFolder(data) {
 // Drive folder management
 // ============================================================
 
-// Get or create the root /receipts/ folder
+// Get or create the root /receipt-tracker/ folder
 function getOrCreateRootFolder() {
   var folders = DriveApp.getFoldersByName(RECEIPTS_FOLDER);
   if (folders.hasNext()) {
@@ -154,7 +191,7 @@ function getOrCreateRootFolder() {
   return DriveApp.createFolder(RECEIPTS_FOLDER);
 }
 
-// Get or create /receipts/YYYYMMDD/ folder
+// Get or create /receipt-tracker/YYYYMMDD/ folder
 function getOrCreateReceiptFolder(folderDate) {
   var root = getOrCreateRootFolder();
   var subfolders = root.getFoldersByName(folderDate);
@@ -169,32 +206,42 @@ function getOrCreateReceiptFolder(folderDate) {
 // ============================================================
 
 // Get or create the receipts spreadsheet and sheet
+// Creates INSIDE the receipt-tracker folder, no duplicates
 function getOrCreateSheet() {
   var root = getOrCreateRootFolder();
-  var files = root.getFilesByName(SPREADSHEET_NAME + ".xlsx");
 
+  // Search for existing spreadsheet by name (Google Sheets — no file extension)
+  var files = root.getFilesByName(SPREADSHEET_NAME);
   var spreadsheet;
+
   if (files.hasNext()) {
+    // Found existing spreadsheet — open it
     var file = files.next();
     spreadsheet = SpreadsheetApp.openById(file.getId());
   } else {
-    // Create new spreadsheet in the receipts root folder
+    // Create new spreadsheet inside the receipt-tracker folder
     var ssId = SpreadsheetApp.create(SPREADSHEET_NAME).getId();
-    // Move it to the receipts folder (SpreadsheetApp.create puts it in root)
-    // We'll work with it from here
+    var file = DriveApp.getFileById(ssId);
+
+    // Move file into the receipts folder
+    root.addFile(file);
+    DriveApp.getRootFolder().removeFile(file);
+
     spreadsheet = SpreadsheetApp.openById(ssId);
   }
 
-  var sheet = spreadsheet.getSheetByName("Sheet1") || spreadsheet.insertSheet("Sheet1");
+  // Get or create the "Receipts" sheet tab
+  var sheetName = "Receipts";
+  var sheet = spreadsheet.getSheetByName(sheetName)
+               || spreadsheet.insertSheet(sheetName);
 
-  // Add headers if the sheet is empty
+  // Add header row if sheet is empty
   if (sheet.getLastRow() === 0) {
     sheet.getRange(1, 1, 1, COLUMNS.length).setValues([COLUMNS]);
+
     // Style header row
-    sheet.getRange(1, 1, 1, COLUMNS.length)
-      .setBackground("#f8f9fa")
-      .setFontWeight("bold");
-    // Freeze header row
+    var headerRange = sheet.getRange(1, 1, 1, COLUMNS.length);
+    headerRange.setBackground("#f8f9fa").setFontWeight("bold");
     spreadsheet.setFrozenRows(1);
   }
 
@@ -205,23 +252,29 @@ function getOrCreateSheet() {
 // Utility functions
 // ============================================================
 
+// Format date to HKT (GMT+8): "YYYY-MM-DD HH:mm:ss"
+function formatHKT(date) {
+  return Utilities.formatDate(date, "GMT+8", "yyyy-MM-dd HH:mm:ss");
+}
+
+// Format date to YYYYMMDD for folder names
+function formatDate(date) {
+  var y = date.getFullYear();
+  var m = ("0" + (date.getMonth() + 1)).slice(-2);
+  var d = ("0" + date.getDate()).slice(-2);
+  return y + m + d;
+}
+
+// JSON response helper
 function jsonResponse(statusCode, data) {
   return ContentService
     .createTextOutput(JSON.stringify(data))
     .setMimeType(ContentService.MimeType.JSON);
 }
 
+// Error logging
 function logError(msg) {
-  console.error(msg);
-  // Also log to Google Apps Script's built-in logging
   Logger.log("ERROR: " + msg);
-}
-
-function formatDate(date) {
-  var y = date.getFullYear();
-  var m = ("0" + (date.getMonth() + 1)).slice(-2);
-  var d = ("0" + date.getDate()).slice(-2);
-  return y + m + d;
 }
 
 // Detect MIME type from filename or base64 header
@@ -237,7 +290,7 @@ function detectMimeType(filename, base64) {
   };
   if (mimeMap[ext]) return mimeMap[ext];
 
-  // Try to detect from base64 content
+  // Detect from base64 content
   if (base64.charAt(0) === "/" && base64.charAt(1) === "9") return "image/jpeg";
   if (base64.charAt(0) === "i" && base64.charAt(1) === "V") return "image/png";
   if (base64.charAt(0) === "U" && base64.charAt(1) === "s") return "image/webp";
@@ -245,8 +298,33 @@ function detectMimeType(filename, base64) {
   return "application/octet-stream";
 }
 
-// For testing: go to Run > setupTestFolder to create the folder structure
-function setupTestFolder() {
-  var folder = getOrCreateReceiptFolder(formatDate(new Date()));
+// ============================================================
+// Test / setup helpers
+// ============================================================
+
+// Run once to set up the folder structure and create the spreadsheet
+// In Apps Script: Run → setupReceiptTracker
+function setupReceiptTracker() {
+  var root = getOrCreateRootFolder();
+  Logger.log("Root folder: " + root.getName() + " — " + root.getUrl());
+
+  // Today's date folder
+  var today = formatDate(new Date());
+  var todayFolder = getOrCreateReceiptFolder(today);
+  Logger.log("Today folder (" + today + "): " + todayFolder.getUrl());
+
+  // Ensure spreadsheet exists
+  var sheet = getOrCreateSheet();
+  Logger.log("Spreadsheet: " + sheet.getParent().getName() + " — " + sheet.getParent().getUrl());
+
+  Logger.log("Setup complete.");
+}
+
+// For testing: create today's folder manually
+// In Apps Script: Run → setupTodayFolder
+function setupTodayFolder() {
+  var today = formatDate(new Date());
+  var folder = getOrCreateReceiptFolder(today);
   Logger.log("Folder URL: " + folder.getUrl());
+  return folder.getUrl();
 }

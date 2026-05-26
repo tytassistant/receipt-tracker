@@ -1481,10 +1481,20 @@ Rules:
   // Extract JSON from response
   var jsonMatch = text.match(/\{[\s\S]*\}/);
   if (!jsonMatch) {
-    throw new Error('No JSON found in response');
+    throw new Error('No JSON found in response: ' + text.substring(0, 200));
   }
 
-  var data = JSON.parse(jsonMatch[0]);
+  var data;
+  try {
+    data = JSON.parse(jsonMatch[0]);
+  } catch (e) {
+    throw new Error('JSON parse error: ' + e.message + '. Response: ' + text.substring(0, 200));
+  }
+  
+  // Validate required fields exist (even if empty)
+  if (typeof data !== 'object' || data === null) {
+    throw new Error('Invalid JSON structure. Response: ' + JSON.stringify(data).substring(0, 200));
+  }
   
   return {
     vendor: data.vendor || '',

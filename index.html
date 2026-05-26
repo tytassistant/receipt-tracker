@@ -1379,6 +1379,9 @@ async function extractReceipts() {
       });
     } catch (e) {
       console.error('Extraction error:', e);
+      // Show error in UI for debugging
+      const errorMsg = e.message || 'Unknown error';
+      showToast('Extraction failed: ' + errorMsg.substring(0, 100), 'error');
       receipts.push({
         id: 'receipt_' + Date.now() + '_' + i,
         photoId: photo.id,
@@ -1388,7 +1391,7 @@ async function extractReceipts() {
         amount: '',
         currency: 'HKD',
         category: 'Uncategorized',
-        remarks: 'Extraction failed - please fill manually',
+        remarks: 'Extraction failed: ' + errorMsg.substring(0, 50),
         imageDataUrl: photo.dataUrl
       });
     }

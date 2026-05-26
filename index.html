@@ -1207,6 +1207,7 @@ async function extractReceipts() {
       receipts.push({
         id: 'receipt_' + Date.now() + '_' + i,
         photoId: photo.id,
+        originalFilename: photo.file ? photo.file.name : 'receipt.jpg',
         ...extracted,
         imageDataUrl: photo.dataUrl
       });
@@ -1215,6 +1216,7 @@ async function extractReceipts() {
       receipts.push({
         id: 'receipt_' + Date.now() + '_' + i,
         photoId: photo.id,
+        originalFilename: photo.file ? photo.file.name : 'receipt.jpg',
         vendor: '',
         date: new Date().toISOString().split('T')[0],
         amount: '',
@@ -1247,9 +1249,9 @@ async function extractReceiptWithPoe(photo) {
     throw new Error('Poe API key is missing');
   }
 
-  // Compress image if large
+  // Compress image if large (target under 500KB)
   var dataUrl = photo.dataUrl;
-  if (dataUrl.length > 2 * 1024 * 1024) {
+  if (dataUrl.length > 500 * 1024) {
     dataUrl = await compressImage(dataUrl, 1200);
   }
 
@@ -1438,9 +1440,16 @@ async function saveReceipts() {
       `Saving receipt ${i + 1} of ${receipts.length}...`;
     
     try {
+      // Compress image if larger than 500KB before upload
+      let uploadDataUrl = r.imageDataUrl;
+      if (uploadDataUrl.length > 500 * 1024) {
+        uploadDataUrl = await compressImage(uploadDataUrl, 1200);
+      }
+
       // Upload image to Drive
-      const filename = `receipt_${today}_${String(i + 1).padStart(3, '0')}.jpg`;
-      const uploadResult = await uploadToDrive(r.imageDataUrl, filename, today);
+      // Use original filename; server will prepend YYYYMMDD_HHmmSS_ timestamp
+      const originalName = r.originalFilename || 'receipt.jpg';
+      const uploadResult = await uploadToDrive(uploadDataUrl, originalName, today);
       
       // Write to Sheet
       await writeToSheet({

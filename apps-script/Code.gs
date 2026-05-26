@@ -219,6 +219,9 @@ function formatDateForResponse(dateObj) {
 }
 
 function handleQueryReceipts(data) {
+  var startTime = new Date().getTime();
+  var timings = {};
+  
   var startDate = data.startDate;
   var endDate = data.endDate;
 
@@ -231,37 +234,77 @@ function handleQueryReceipts(data) {
   var endDateObj = parseDateInput(endDate);
   // Set end date to end of day for inclusive comparison
   endDateObj.setHours(23, 59, 59, 999);
+  timings.parseDates = new Date().getTime() - startTime;
 
-  var sheet = getOrCreateSheet();
+  // Direct folder access instead of getOrCreateSheet() search
+  var folderStart = new Date().getTime();
+  var rootFolder = getOrCreateRootFolder();
+  timings.getFolder = new Date().getTime() - folderStart;
+  
+  var sheetStart = new Date().getTime();
+  var sheet;
+  var files = rootFolder.getFilesByName(SPREADSHEET_NAME);
+  if (files.hasNext()) {
+    var spreadsheet = SpreadsheetApp.open(files.next());
+    sheet = spreadsheet.getSheetByName("Receipts");
+  } else {
+    // Fallback to creating if missing
+    Logger.log("[queryReceipts] Spreadsheet not found, creating new one");
+    sheet = getOrCreateSheet();
+  }
+  timings.openSheet = new Date().getTime() - sheetStart;
+
+  var dataFetchStart = new Date().getTime();
   var lastRow = sheet.getLastRow();
+  timings.checkRowCount = new Date().getTime() - dataFetchStart;
 
   var receipts = [];
   var totalAmount = 0;
 
   if (lastRow > 1) {
-    // Get all data rows (skip header row 1)
-    var dataRange = sheet.getRange(2, 1, lastRow - 1, COLUMNS.length);
-    var allData = dataRange.getValues();
-
-    for (var i = 0; i < allData.length; i++) {
-      var row = allData[i];
-      var recordNo = row[0];
-      var dateCell = row[1];       // Column B: Date (Date object from sheet)
-      var description = row[4]; // Column E: Description
-      var amount = parseFloat(row[5]) || 0; // Column F: Amount
-      var currency = row[6];    // Column G: Currency
-      var category = row[7];   // Column H: Category
-      var remarks = row[8];    // Column I: Remarks
-      var imageName = row[9];  // Column J: Image_name
-      var imageUrl = row[10];  // Column K: Image_URL
-
-      // Compare Date objects directly for accurate range check
+    // Fetch only needed columns: A(1), B(2), E(5), F(6), G(7) for efficiency
+    // Get them in separate calls to minimize data transfer
+    var rangeStart = new Date().getTime();
+    var rowsCount = lastRow - 1;
+    
+    // Get dates (column B) for filtering
+    var datesRange = sheet.getRange(2, 2, rowsCount, 1);
+    var datesData = datesRange.getValues();
+    
+    // Get other data columns only for rows that match date range
+    // First pass: identify matching row indices
+    var matchingIndices = [];
+    for (var i = 0; i < datesData.length; i++) {
+      var dateCell = datesData[i][0];
       if (dateCell instanceof Date && 
           dateCell.getTime() >= startDateObj.getTime() && 
           dateCell.getTime() <= endDateObj.getTime()) {
+        matchingIndices.push(i);
+      }
+    }
+    
+    // Second pass: fetch full row data only for matching rows
+    if (matchingIndices.length > 0) {
+      // Get all needed columns: A, B, E, F, G, H, I, J, K
+      var allDataRange = sheet.getRange(2, 1, rowsCount, COLUMNS.length);
+      var allData = allDataRange.getValues();
+      
+      for (var j = 0; j < matchingIndices.length; j++) {
+        var idx = matchingIndices[j];
+        var row = allData[idx];
+        var recordNo = row[0];
+        var dateCell = row[1];
+        var description = row[4];
+        var amount = parseFloat(row[5]) || 0;
+        var currency = row[6];
+        var category = row[7];
+        var remarks = row[8];
+        var imageName = row[9];
+        var imageUrl = row[10];
+        
         receipts.push({
           recordNo: recordNo,
-          date: formatDateForResponse(dateCell),  // Return as YYYY-MM-DD string
+          date: formatDateForResponse(dateCell),
           description: description,
           amount: amount,
           currency: currency,
@@ -273,7 +316,12 @@ function handleQueryReceipts(data) {
         totalAmount += amount;
       }
     }
+    timings.fetchAndFilter = new Date().getTime() - rangeStart;
   }
+
+  var totalTime = new Date().getTime() - startTime;
+  Logger.log("[queryReceipts] Total: " + totalTime + "ms | Folder: " + timings.getFolder + 
+             "ms | Sheet: " + timings.openSheet + "ms | Data: " + (timings.fetchAndFilter || 0) + "ms");
 
   return jsonResponse(200, {
     success: true,
@@ -281,7 +329,11 @@ function handleQueryReceipts(data) {
     endDate: endDate,
     count: receipts.length,
     receipts: receipts,
-    totalAmount: totalAmount
+    totalAmount: totalAmount,
+    timing: {
+      totalMs: totalTime,
+      steps: timings
+    }
   });
 }
 

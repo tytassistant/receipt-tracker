@@ -773,6 +773,8 @@
           <i class="fas fa-plus"></i> Add New Record
         </button>
       </div>
+      
+      <div id="summaryTiming" style="text-align:center; color:var(--text-muted); font-size:12px; margin-top:16px; padding-top:12px; border-top:1px solid var(--border-light);"></div>
     </div>
   </div>
 
@@ -1210,13 +1212,26 @@ async function loadSummaryData() {
   const summaryLoading = document.getElementById('summaryLoading');
   const summaryContent = document.getElementById('summaryContent');
   const summaryEmpty = document.getElementById('summaryEmpty');
+  const summaryTiming = document.getElementById('summaryTiming');
   
   summaryLoading.style.display = 'block';
   summaryContent.style.display = 'none';
   summaryEmpty.style.display = 'none';
+  summaryTiming.textContent = '';
+  
+  const clientStartTime = performance.now();
   
   try {
     const result = await queryReceipts(startDate, endDate);
+    const clientDuration = Math.round(performance.now() - clientStartTime);
+    
+    // Display timing info
+    const serverTiming = result.timing ? `Server: ${result.timing.totalMs}ms` : '';
+    const timingText = serverTiming 
+      ? `Query completed in ${clientDuration}ms (${serverTiming})`
+      : `Query completed in ${clientDuration}ms`;
+    summaryTiming.textContent = timingText;
+    console.log('[queryReceipts] ' + timingText, result.timing || '');
     
     summaryLoading.style.display = 'none';
     
@@ -1245,6 +1260,8 @@ async function loadSummaryData() {
     summaryContent.style.display = 'block';
   } catch (e) {
     summaryLoading.style.display = 'none';
+    const clientDuration = Math.round(performance.now() - clientStartTime);
+    summaryTiming.textContent = `Query failed after ${clientDuration}ms`;
     showToast('Failed to load summary: ' + e.message, 'error');
   }
 }

@@ -61,15 +61,8 @@ function doPost(e) {
 // Token verification
 // ============================================================
 function verifyToken(token) {
-  // NOTE: Update this token in Apps Script project (File → Project Settings → Script properties)
-  // The secret token is stored in index.html config and compared here
   var secret = PropertiesService.getScriptProperties().getProperty("SECRET_TOKEN");
-  if (!secret) {
-    // Fallback — set via: PropertiesService.getScriptProperties().setProperty("SECRET_TOKEN", "your-token")
-    // For now, allow any non-empty token to avoid breaking existing deployments
-    return token && token.length > 0;
-  }
-  return token === secret;
+  return token && secret && token === secret;
 }
 
 // ============================================================

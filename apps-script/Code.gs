@@ -236,9 +236,9 @@ function handleQueryReceipts(data) {
   endDateObj.setHours(23, 59, 59, 999);
   timings.parseDates = new Date().getTime() - startTime;
 
-  // Direct folder access instead of getOrCreateSheet() search
+  // Direct folder access with ID caching for performance
   var folderStart = new Date().getTime();
-  var rootFolder = getOrCreateRootFolder();
+  var rootFolder = getOrCreateRootFolderCached();
   timings.getFolder = new Date().getTime() - folderStart;
   
   var sheetStart = new Date().getTime();
@@ -341,13 +341,41 @@ function handleQueryReceipts(data) {
 // Drive folder management
 // ============================================================
 
-// Get or create the root /receipt-tracker/ folder
+// Get or create the root /receipt-tracker/ folder (with ID caching for performance)
 function getOrCreateRootFolder() {
   var folders = DriveApp.getFoldersByName(RECEIPTS_FOLDER);
   if (folders.hasNext()) {
     return folders.next();
   }
   return DriveApp.createFolder(RECEIPTS_FOLDER);
+}
+
+// Get folder with ID caching for faster repeated access
+function getOrCreateRootFolderCached() {
+  var props = PropertiesService.getScriptProperties();
+  var folderId = props.getProperty("RECEIPTS_FOLDER_ID");
+  
+  if (folderId) {
+    try {
+      return DriveApp.getFolderById(folderId);
+    } catch (e) {
+      // Folder was deleted or ID invalid, fall through to search
+      Logger.log("[getOrCreateRootFolderCached] Cached ID invalid, searching Drive...");
+    }
+  }
+  
+  // Search and cache the ID
+  var folders = DriveApp.getFoldersByName(RECEIPTS_FOLDER);
+  if (folders.hasNext()) {
+    var folder = folders.next();
+    props.setProperty("RECEIPTS_FOLDER_ID", folder.getId());
+    return folder;
+  }
+  
+  // Create and cache
+  var newFolder = DriveApp.createFolder(RECEIPTS_FOLDER);
+  props.setProperty("RECEIPTS_FOLDER_ID", newFolder.getId());
+  return newFolder;
 }
 
 // Get or create /receipt-tracker/YYYYMMDD/ folder

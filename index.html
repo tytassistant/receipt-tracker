@@ -810,6 +810,18 @@
         <h2 id="saveDoneTitle">All saved!</h2>
         <p id="saveDoneText">Your receipts are now in Google Drive and Sheets.</p>
       </div>
+      <div id="saveSummaryTable" style="display:none; margin:20px 0;">
+        <table style="width:100%; border-collapse:collapse; font-size:14px;">
+          <thead>
+            <tr style="background:var(--bg-secondary);">
+              <th style="padding:8px 12px; text-align:left; font-weight:600;">Description</th>
+              <th style="padding:8px 12px; text-align:left; font-weight:600;">Date</th>
+              <th style="padding:8px 12px; text-align:right; font-weight:600;">Amount</th>
+            </tr>
+          </thead>
+          <tbody id="saveSummaryTableBody"></tbody>
+        </table>
+      </div>
       <div id="saveErrorDetail" style="display:none; margin-top:16px; padding:12px; background:var(--danger-light); border-radius:var(--radius-sm); color:var(--danger); font-family:monospace; font-size:12px; white-space:pre-wrap; word-break:break-all; border:1px solid var(--danger);"></div>
       <div class="action-bar" style="justify-content:center;">
         <button class="btn btn-accent" id="newReceiptBtn">
@@ -1249,9 +1261,9 @@ async function extractReceiptWithPoe(photo) {
     throw new Error('Poe API key is missing');
   }
 
-  // Compress image if large (target under 500KB)
+  // Compress image if large (target under 300KB)
   var dataUrl = photo.dataUrl;
-  if (dataUrl.length > 500 * 1024) {
+  if (dataUrl.length > 300 * 1024) {
     dataUrl = await compressImage(dataUrl, 1200);
   }
 
@@ -1442,7 +1454,7 @@ async function saveReceipts() {
     try {
       // Compress image if larger than 500KB before upload
       let uploadDataUrl = r.imageDataUrl;
-      if (uploadDataUrl.length > 500 * 1024) {
+      if (uploadDataUrl.length > 300 * 1024) {
         uploadDataUrl = await compressImage(uploadDataUrl, 1200);
       }
 
@@ -1484,6 +1496,22 @@ async function saveReceipts() {
   document.getElementById('saveDoneIcon').style.color = failCount === 0 ? 'var(--success)' : 'var(--danger)';
   document.getElementById('saveDoneTitle').textContent = title;
   document.getElementById('saveDoneText').textContent = text;
+  
+  // Show summary table on success
+  const summaryTable = document.getElementById('saveSummaryTable');
+  const summaryTableBody = document.getElementById('saveSummaryTableBody');
+  if (failCount === 0 && receipts.length > 0) {
+    summaryTableBody.innerHTML = receipts.map(r => `
+      <tr style="border-bottom:1px solid var(--border-light);">
+        <td style="padding:8px 12px;">${escapeHtml(r.vendor || r.description || '-')}</td>
+        <td style="padding:8px 12px;">${r.date || '-'}</td>
+        <td style="padding:8px 12px; text-align:right; font-weight:600;">${r.currency || 'HKD'} ${r.amount || '0'}</td>
+      </tr>
+    `).join('');
+    summaryTable.style.display = 'block';
+  } else {
+    summaryTable.style.display = 'none';
+  }
   
   if (errors.length > 0) {
     document.getElementById('saveErrorDetail').style.display = 'block';

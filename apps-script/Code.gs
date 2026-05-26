@@ -49,6 +49,8 @@ function doPost(e) {
       return handleSaveReceipts(data);
     } else if (action === "getFolder") {
       return handleGetFolder(data);
+    } else if (action === "queryReceipts") {
+      return handleQueryReceipts(data);
     } else {
       return jsonResponse(400, { error: "Unknown action: " + action });
     }
@@ -181,6 +183,71 @@ function handleGetFolder(data) {
   return jsonResponse(200, {
     folderUrl: folder.getUrl(),
     folderId: folder.getId()
+  });
+}
+
+// ============================================================
+// Action: queryReceipts
+// Query receipts from sheet by date range
+// data: { startDate: 'YYYY-MM-DD', endDate: 'YYYY-MM-DD' }
+// Returns: { success: true, receipts: [...], totalAmount: number }
+// ============================================================
+function handleQueryReceipts(data) {
+  var startDate = data.startDate;
+  var endDate = data.endDate;
+
+  if (!startDate || !endDate) {
+    return jsonResponse(400, { error: "startDate and endDate are required (YYYY-MM-DD format)" });
+  }
+
+  var sheet = getOrCreateSheet();
+  var lastRow = sheet.getLastRow();
+
+  var receipts = [];
+  var totalAmount = 0;
+
+  if (lastRow > 1) {
+    // Get all data rows (skip header row 1)
+    var dataRange = sheet.getRange(2, 1, lastRow - 1, COLUMNS.length);
+    var allData = dataRange.getValues();
+
+    for (var i = 0; i < allData.length; i++) {
+      var row = allData[i];
+      var recordNo = row[0];
+      var date = row[1];       // Column B: Date (YYYY-MM-DD string)
+      var description = row[4]; // Column E: Description
+      var amount = parseFloat(row[5]) || 0; // Column F: Amount
+      var currency = row[6];    // Column G: Currency
+      var category = row[7];   // Column H: Category
+      var remarks = row[8];    // Column I: Remarks
+      var imageName = row[9];  // Column J: Image_name
+      var imageUrl = row[10];  // Column K: Image_URL
+
+      // Check if date is within range (inclusive)
+      if (date && date >= startDate && date <= endDate) {
+        receipts.push({
+          recordNo: recordNo,
+          date: date,
+          description: description,
+          amount: amount,
+          currency: currency,
+          category: category,
+          remarks: remarks,
+          imageName: imageName,
+          imageUrl: imageUrl
+        });
+        totalAmount += amount;
+      }
+    }
+  }
+
+  return jsonResponse(200, {
+    success: true,
+    startDate: startDate,
+    endDate: endDate,
+    count: receipts.length,
+    receipts: receipts,
+    totalAmount: totalAmount
   });
 }
 

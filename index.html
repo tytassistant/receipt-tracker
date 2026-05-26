@@ -720,6 +720,62 @@
 
   </div>
 
+  <!-- ======= SECTION 1.5: WELCOME/SUMMARY ======= -->
+  <div class="section" id="section-welcome">
+    <div class="card">
+      <div class="card-title"><i class="fas fa-chart-pie" style="margin-right:8px;"></i>Receipt Summary</div>
+      <div class="card-desc">View your spending summary for a selected period.</div>
+
+      <div style="display:flex; gap:16px; margin:20px 0; flex-wrap:wrap;">
+        <div class="field" style="flex:1; min-width:140px;">
+          <label>Start Date</label>
+          <input type="date" id="summaryStartDate">
+        </div>
+        <div class="field" style="flex:1; min-width:140px;">
+          <label>End Date</label>
+          <input type="date" id="summaryEndDate">
+        </div>
+      </div>
+
+      <div id="summaryLoading" style="display:none; text-align:center; padding:20px;">
+        <i class="fas fa-spinner fa-spin"></i> Loading...
+      </div>
+
+      <div id="summaryContent" style="display:none;">
+        <div style="background:var(--bg-secondary); padding:16px 20px; border-radius:var(--radius-sm); margin-bottom:20px; text-align:center;">
+          <div style="font-size:12px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px;">Total Amount</div>
+          <div id="summaryTotalAmount" style="font-size:32px; font-weight:700; color:var(--accent); margin-top:4px;">HKD 0</div>
+          <div id="summaryRecordCount" style="font-size:13px; color:var(--text-muted); margin-top:4px;">0 receipts</div>
+        </div>
+
+        <table style="width:100%; border-collapse:collapse; font-size:14px; margin-bottom:20px;">
+          <thead>
+            <tr style="background:var(--bg-secondary);">
+              <th style="padding:10px 12px; text-align:left; font-weight:600; font-size:12px; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted);">Description</th>
+              <th style="padding:10px 12px; text-align:left; font-weight:600; font-size:12px; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted);">Date</th>
+              <th style="padding:10px 12px; text-align:right; font-weight:600; font-size:12px; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted);">Amount</th>
+            </tr>
+          </thead>
+          <tbody id="summaryTableBody"></tbody>
+        </table>
+      </div>
+
+      <div id="summaryEmpty" style="display:none; text-align:center; padding:30px 20px; color:var(--text-muted);">
+        <i class="fas fa-inbox" style="font-size:32px; margin-bottom:12px; display:block;"></i>
+        No receipts found in this date range.
+      </div>
+
+      <div class="action-bar" style="flex-direction:column; gap:12px;">
+        <button class="btn btn-primary btn-block" id="viewDetailsBtn">
+          <i class="fas fa-list-alt"></i> View / Edit Detailed Records
+        </button>
+        <button class="btn btn-accent btn-block" id="addNewRecordBtn">
+          <i class="fas fa-plus"></i> Add New Record
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- ======= SECTION 2: CAPTURE ======= -->
   <div class="section" id="section-capture">
     <div class="card">
@@ -823,9 +879,12 @@
         </table>
       </div>
       <div id="saveErrorDetail" style="display:none; margin-top:16px; padding:12px; background:var(--danger-light); border-radius:var(--radius-sm); color:var(--danger); font-family:monospace; font-size:12px; white-space:pre-wrap; word-break:break-all; border:1px solid var(--danger);"></div>
-      <div class="action-bar" style="justify-content:center;">
+      <div class="action-bar" style="justify-content:center; gap:12px; flex-wrap:wrap;">
         <button class="btn btn-accent" id="newReceiptBtn">
           <i class="fas fa-receipt"></i> Capture more receipts
+        </button>
+        <button class="btn btn-outline" id="returnToSummaryBtn">
+          <i class="fas fa-chart-pie"></i> Return to Summary
         </button>
       </div>
     </div>
@@ -858,6 +917,7 @@ let isExtracting = false;
 // DOM Elements
 const sections = {
   setup: document.getElementById('section-setup'),
+  welcome: document.getElementById('section-welcome'),
   capture: document.getElementById('section-capture'),
   review: document.getElementById('section-review'),
   save: document.getElementById('section-save')
@@ -1044,7 +1104,7 @@ async function handleUnlock() {
     if (!config) throw new Error('No config found');
     document.getElementById('unlockPinError').textContent = '';
     showToast('Unlocked!', 'success');
-    setStep(2);
+    showWelcomePanel();
   } catch (e) {
     document.getElementById('unlockPinError').textContent = 'Invalid PIN';
   }
@@ -1112,6 +1172,100 @@ function handleForgotPin() {
     showToast('Credentials cleared. Please set up again.', 'success');
     initSetup();
   }
+}
+
+// ==========================================
+// WELCOME / SUMMARY PANEL
+// ==========================================
+
+function showWelcomePanel() {
+  // Hide all sections, show welcome
+  Object.values(sections).forEach(sec => sec.classList.remove('visible'));
+  sections.welcome.classList.add('visible');
+  
+  // Set default dates: start of current month to today
+  const today = new Date();
+  const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+  
+  document.getElementById('summaryStartDate').value = formatDateForInput(startOfMonth);
+  document.getElementById('summaryEndDate').value = formatDateForInput(today);
+  
+  // Load summary data
+  loadSummaryData();
+}
+
+function formatDateForInput(date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+async function loadSummaryData() {
+  const startDate = document.getElementById('summaryStartDate').value;
+  const endDate = document.getElementById('summaryEndDate').value;
+  
+  if (!startDate || !endDate || !config) return;
+  
+  const summaryLoading = document.getElementById('summaryLoading');
+  const summaryContent = document.getElementById('summaryContent');
+  const summaryEmpty = document.getElementById('summaryEmpty');
+  
+  summaryLoading.style.display = 'block';
+  summaryContent.style.display = 'none';
+  summaryEmpty.style.display = 'none';
+  
+  try {
+    const result = await queryReceipts(startDate, endDate);
+    
+    summaryLoading.style.display = 'none';
+    
+    if (!result.success || result.count === 0) {
+      summaryEmpty.style.display = 'block';
+      return;
+    }
+    
+    // Update total
+    const currency = result.receipts[0]?.currency || 'HKD';
+    document.getElementById('summaryTotalAmount').textContent = 
+      `${currency} ${result.totalAmount.toFixed(2)}`;
+    document.getElementById('summaryRecordCount').textContent = 
+      `${result.count} receipt${result.count > 1 ? 's' : ''}`;
+    
+    // Populate table
+    const tbody = document.getElementById('summaryTableBody');
+    tbody.innerHTML = result.receipts.map(r => `
+      <tr style="border-bottom:1px solid var(--border-light);">
+        <td style="padding:10px 12px;">${escapeHtml(r.description || '-')}</td>
+        <td style="padding:10px 12px; font-size:13px; color:var(--text-muted);">${r.date || '-'}</td>
+        <td style="padding:10px 12px; text-align:right; font-weight:600;">${r.currency || 'HKD'} ${r.amount || '0'}</td>
+      </tr>
+    `).join('');
+    
+    summaryContent.style.display = 'block';
+  } catch (e) {
+    summaryLoading.style.display = 'none';
+    showToast('Failed to load summary: ' + e.message, 'error');
+  }
+}
+
+async function queryReceipts(startDate, endDate) {
+  const response = await fetch(config.appsScriptUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify({
+      token: config.secretToken,
+      action: 'queryReceipts',
+      data: { startDate, endDate }
+    })
+  });
+  
+  const result = await response.text().then(text => {
+    try { return JSON.parse(text); }
+    catch { return { success: false, error: 'Invalid JSON response' }; }
+  });
+  
+  return result;
 }
 
 // ==========================================
@@ -1649,6 +1803,24 @@ document.addEventListener('DOMContentLoaded', () => {
     renderPhotoGrid();
     setStep(2);
   });
+  document.getElementById('returnToSummaryBtn').addEventListener('click', () => {
+    showWelcomePanel();
+  });
+  
+  // Welcome panel buttons
+  document.getElementById('addNewRecordBtn').addEventListener('click', () => {
+    photos = [];
+    receipts = [];
+    renderPhotoGrid();
+    setStep(2);
+  });
+  document.getElementById('viewDetailsBtn').addEventListener('click', () => {
+    showToast('View/Edit feature coming soon', 'info');
+  });
+  
+  // Welcome panel date changes trigger refresh
+  document.getElementById('summaryStartDate').addEventListener('change', () => loadSummaryData());
+  document.getElementById('summaryEndDate').addEventListener('change', () => loadSummaryData());
   
   // Lightbox
   document.getElementById('lightboxClose').addEventListener('click', closeLightbox);

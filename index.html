@@ -289,6 +289,30 @@
     }
     .camera-btn:hover { background: var(--accent); color: #fff; }
     .camera-btn i { font-size: 15px; }
+    .camera-btn:disabled { opacity: 0.5; cursor: not-allowed; pointer-events: none; }
+
+    /* Upload Actions Row - Side by side */
+    .upload-actions-row {
+      display: flex; gap: 12px; margin-bottom: 16px;
+    }
+    .upload-actions-row .upload-zone {
+      flex: 1;
+      padding: 16px 12px;
+    }
+    .upload-actions-row .upload-zone i {
+      font-size: 20px; color: var(--accent);
+      margin-bottom: 4px;
+    }
+    .upload-actions-row .upload-zone span {
+      font-size: 13px; color: var(--text-secondary);
+      display: block;
+    }
+    .upload-actions-row .camera-btn {
+      flex: 1;
+      justify-content: center;
+      height: auto;
+      min-height: 60px;
+    }
 
     /* Photo Grid */
     .photo-grid {
@@ -737,14 +761,12 @@
       <div class="card-title">Capture Receipts</div>
       <div class="card-desc">Upload or photograph your receipts for AI extraction.</div>
 
-      <div class="upload-zone" id="uploadZone">
-        <input type="file" id="receiptInput" accept="image/*" multiple>
-        <div class="upload-icon"><i class="fas fa-cloud-arrow-up"></i></div>
-        <h3>Tap to upload or drag & drop</h3>
-        <p>PNG, JPG, WebP — max 5 MB each</p>
-      </div>
-      
-      <div class="camera-btn-row">
+      <div class="upload-actions-row">
+        <div class="upload-zone" id="uploadZone">
+          <input type="file" id="receiptInput" accept="image/*" multiple>
+          <i class="fas fa-cloud-arrow-up"></i>
+          <span>Upload<br>max 5MB, 5 photos</span>
+        </div>
         <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none;">
         <button type="button" class="camera-btn" id="cameraBtn">
           <i class="fas fa-camera"></i> Take photo

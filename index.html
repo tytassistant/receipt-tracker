@@ -295,23 +295,55 @@
     .upload-actions-row {
       display: flex; gap: 12px; margin-bottom: 16px;
     }
-    .upload-actions-row .upload-zone {
+    .upload-actions-row .upload-btn {
       flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      font-family: 'Bricolage Grotesque', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--accent);
+      background: var(--accent-light);
+      border: 1px solid var(--accent);
+      border-radius: var(--radius-sm);
       padding: 16px 12px;
+      cursor: pointer;
+      transition: var(--transition);
+      min-height: 76px;
+      text-align: center;
+      line-height: 1.3;
     }
-    .upload-actions-row .upload-zone i {
-      font-size: 20px; color: var(--accent);
-      margin-bottom: 4px;
+    .upload-actions-row .upload-btn:hover {
+      background: var(--accent);
+      color: #fff;
     }
-    .upload-actions-row .upload-zone span {
-      font-size: 13px; color: var(--text-secondary);
-      display: block;
+    .upload-actions-row .upload-btn i {
+      font-size: 24px;
+    }
+    .upload-actions-row .upload-btn input[type="file"] {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+    }
+    .upload-actions-row .upload-btn.dragover {
+      background: var(--accent);
+      color: #fff;
     }
     .upload-actions-row .camera-btn {
       flex: 1;
       justify-content: center;
-      height: auto;
-      min-height: 60px;
+      min-height: 76px;
+    }
+
+    /* Two-line action buttons */
+    .btn-two-line {
+      flex-direction: column;
+      line-height: 1.3;
+      min-width: 100px;
     }
 
     /* Photo Grid */
@@ -762,11 +794,11 @@
       <div class="card-desc">Upload or photograph your receipts for AI extraction.</div>
 
       <div class="upload-actions-row">
-        <div class="upload-zone" id="uploadZone">
+        <button type="button" class="upload-btn" id="uploadBtn">
           <input type="file" id="receiptInput" accept="image/*" multiple>
           <i class="fas fa-cloud-arrow-up"></i>
           <span>Upload<br>max 5MB, 5 photos</span>
-        </div>
+        </button>
         <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none;">
         <button type="button" class="camera-btn" id="cameraBtn">
           <i class="fas fa-camera"></i> Take photo
@@ -786,8 +818,8 @@
         <button class="btn btn-outline" id="backToSummaryBtn">
           <i class="fas fa-arrow-left"></i> Back
         </button>
-        <button class="btn btn-accent" id="extractBtn" disabled>
-          <i class="fas fa-wand-magic-sparkles"></i> Extract with AI
+        <button class="btn btn-accent btn-two-line" id="extractBtn" disabled>
+          <i class="fas fa-wand-magic-sparkles"></i> Extract<br>with AI
         </button>
       </div>
 
@@ -1310,25 +1342,25 @@ async function queryReceipts(startDate, endDate) {
 // ==========================================
 
 function initPhotoUpload() {
-  const uploadZone = document.getElementById('uploadZone');
+  const uploadBtn = document.getElementById('uploadBtn');
   const fileInput = document.getElementById('receiptInput');
   const cameraBtn = document.getElementById('cameraBtn');
   const cameraInput = document.getElementById('cameraInput');
   
-  uploadZone.addEventListener('click', () => fileInput.click());
+  uploadBtn.addEventListener('click', () => fileInput.click());
   
-  uploadZone.addEventListener('dragover', (e) => {
+  uploadBtn.addEventListener('dragover', (e) => {
     e.preventDefault();
-    uploadZone.classList.add('dragover');
+    uploadBtn.classList.add('dragover');
   });
   
-  uploadZone.addEventListener('dragleave', () => {
-    uploadZone.classList.remove('dragover');
+  uploadBtn.addEventListener('dragleave', () => {
+    uploadBtn.classList.remove('dragover');
   });
   
-  uploadZone.addEventListener('drop', (e) => {
+  uploadBtn.addEventListener('drop', (e) => {
     e.preventDefault();
-    uploadZone.classList.remove('dragover');
+    uploadBtn.classList.remove('dragover');
     handleFiles(e.dataTransfer.files);
   });
   
@@ -1372,13 +1404,13 @@ function handleFiles(files) {
 }
 
 function updatePhotoUploadState() {
-  const uploadZone = document.getElementById('uploadZone');
+  const uploadBtn = document.getElementById('uploadBtn');
   const cameraBtn = document.getElementById('cameraBtn');
   const isFull = photos.length >= MAX_PHOTOS;
   
-  if (uploadZone) {
-    uploadZone.style.opacity = isFull ? '0.5' : '1';
-    uploadZone.style.pointerEvents = isFull ? 'none' : 'auto';
+  if (uploadBtn) {
+    uploadBtn.style.opacity = isFull ? '0.5' : '1';
+    uploadBtn.style.pointerEvents = isFull ? 'none' : 'auto';
   }
   if (cameraBtn) {
     cameraBtn.disabled = isFull;
@@ -1425,8 +1457,9 @@ function updateExtractButtonLabel() {
   const checkbox = document.getElementById('extractAiCheckbox');
   const btn = document.getElementById('extractBtn');
   const icon = checkbox.checked ? 'fa-wand-magic-sparkles' : 'fa-pen-to-square';
-  const text = checkbox.checked ? 'Extract with AI' : 'Enter Details';
-  btn.innerHTML = `<i class="fas ${icon}"></i> ${text}`;
+  const line1 = checkbox.checked ? 'Extract' : 'Enter';
+  const line2 = checkbox.checked ? 'with AI' : 'Details';
+  btn.innerHTML = `<i class="fas ${icon}"></i> ${line1}<br>${line2}`;
 }
 
 function handleExtractOrEnterDetails() {

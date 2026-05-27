@@ -419,9 +419,26 @@
       z-index: 1000; pointer-events: none;
       box-shadow: var(--shadow-lg);
     }
-    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); pointer-events: auto; }
     .toast.error { background: var(--danger); }
     .toast.success { background: var(--success); }
+    
+    .toast-close-btn {
+      position: absolute;
+      right: 8px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      color: inherit;
+      font-size: 20px;
+      cursor: pointer;
+      padding: 0 8px;
+      line-height: 1;
+      opacity: 0.7;
+      transition: opacity 0.2s;
+    }
+    .toast-close-btn:hover { opacity: 1; }
 
     /* Lightbox */
     .lightbox-overlay {
@@ -960,10 +977,41 @@ function clearConfig() {
 
 function showToast(message, type = '') {
   const toast = document.getElementById('toast');
+  
+  // Clear any existing auto-dismiss timeout
+  if (toast.dismissTimeout) {
+    clearTimeout(toast.dismissTimeout);
+  }
+  
+  // Remove any existing close button
+  const existingCloseBtn = toast.querySelector('.toast-close-btn');
+  if (existingCloseBtn) {
+    existingCloseBtn.remove();
+  }
+  
   toast.textContent = message;
   toast.className = 'toast ' + type;
-  setTimeout(() => toast.classList.add('show'), 10);
-  setTimeout(() => toast.classList.remove('show'), 3000);
+  
+  // Use requestAnimationFrame to ensure DOM update before showing
+  requestAnimationFrame(() => {
+    toast.classList.add('show');
+  });
+  
+  // Auto-dismiss for non-error types only
+  if (type !== 'error') {
+    toast.dismissTimeout = setTimeout(() => {
+      toast.classList.remove('show');
+    }, 3000);
+  } else {
+    // Add close button for error toasts
+    const closeBtn = document.createElement('button');
+    closeBtn.className = 'toast-close-btn';
+    closeBtn.innerHTML = '&times;';
+    closeBtn.onclick = () => {
+      toast.classList.remove('show');
+    };
+    toast.appendChild(closeBtn);
+  }
 }
 
 function setStep(stepNum) {
@@ -1366,53 +1414,73 @@ async function extractReceipts() {
   if (photos.length === 0 || !config) return;
   
   isExtracting = true;
-  document.getElementById('extractBtn').disabled = true;
-  document.getElementById('extractionLoading').style.display = 'block';
+  const extractBtn = document.getElementById('extractBtn');
+  const loadingDiv = document.getElementById('extractionLoading');
+  const progressBar = document.getElementById('extractionProgressBar');
+  const statusText = document.getElementById('extractionStatus');
+  
+  extractBtn.disabled = true;
+  loadingDiv.style.display = 'block';
   
   receipts = [];
+  const failedPhotos = [];
   
-  for (let i = 0; i < photos.length; i++) {
-    const photo = photos[i];
-    const progress = ((i + 1) / photos.length) * 100;
-    document.getElementById('extractionProgressBar').style.width = progress + '%';
-    document.getElementById('extractionStatus').textContent = 
-      `Analyzing receipt ${i + 1} of ${photos.length}...`;
-    
-    try {
-      const extracted = await extractReceiptWithPoe(photo);
-      receipts.push({
-        id: 'receipt_' + Date.now() + '_' + i,
-        photoId: photo.id,
-        originalFilename: photo.file ? photo.file.name : 'receipt.jpg',
-        ...extracted,
-        imageDataUrl: photo.dataUrl
-      });
-    } catch (e) {
-      console.error('Extraction error:', e);
-      // Show error in UI for debugging
-      const errorMsg = e.message || 'Unknown error';
-      showToast('Extraction failed: ' + errorMsg.substring(0, 100), 'error');
-      receipts.push({
-        id: 'receipt_' + Date.now() + '_' + i,
-        photoId: photo.id,
-        originalFilename: photo.file ? photo.file.name : 'receipt.jpg',
-        vendor: '',
-        date: new Date().toISOString().split('T')[0],
-        amount: '',
-        currency: 'HKD',
-        category: 'Uncategorized',
-        remarks: 'Extraction failed: ' + errorMsg.substring(0, 50),
-        imageDataUrl: photo.dataUrl
-      });
+  try {
+    for (let i = 0; i < photos.length; i++) {
+      const photo = photos[i];
+      const photoNum = i + 1;
+      const progress = (photoNum / photos.length) * 100;
+      progressBar.style.width = progress + '%';
+      statusText.textContent = `Analyzing receipt ${photoNum} of ${photos.length}...`;
+      
+      try {
+        const extracted = await extractReceiptWithPoe(photo);
+        receipts.push({
+          id: 'receipt_' + Date.now() + '_' + i,
+          photoId: photo.id,
+          originalFilename: photo.file ? photo.file.name : 'receipt.jpg',
+          ...extracted,
+          imageDataUrl: photo.dataUrl
+        });
+      } catch (e) {
+        console.error(`Extraction error for photo ${photoNum}:`, e);
+        const errorMsg = e.message || 'Unknown error';
+        failedPhotos.push(`Photo ${photoNum}: ${errorMsg.substring(0, 40)}`);
+        
+        // Still create entry with empty fields for failed photos
+        receipts.push({
+          id: 'receipt_' + Date.now() + '_' + i,
+          photoId: photo.id,
+          originalFilename: photo.file ? photo.file.name : 'receipt.jpg',
+          vendor: '',
+          date: new Date().toISOString().split('T')[0],
+          amount: '',
+          currency: 'HKD',
+          category: 'Uncategorized',
+          remarks: 'Extraction failed',
+          imageDataUrl: photo.dataUrl
+        });
+      }
     }
+    
+    renderReviewTable();
+    setStep(3);
+    
+    // Show error toast if any photos failed
+    if (failedPhotos.length > 0) {
+      const errorMessage = failedPhotos.length === 1 
+        ? `Failed: ${failedPhotos[0]}`
+        : `Failed ${failedPhotos.length} photos:\n${failedPhotos.join('; ')}`;
+      showToast(errorMessage, 'error');
+    }
+  } catch (outerError) {
+    console.error('Unexpected extraction error:', outerError);
+    showToast('Extraction failed: ' + (outerError.message || 'Unexpected error'), 'error');
+  } finally {
+    isExtracting = false;
+    loadingDiv.style.display = 'none';
+    extractBtn.disabled = false;
   }
-  
-  isExtracting = false;
-  document.getElementById('extractionLoading').style.display = 'none';
-  document.getElementById('extractBtn').disabled = false;
-  
-  renderReviewTable();
-  setStep(3);
 }
 
 // Get Poe API key from encrypted config or input field

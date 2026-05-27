@@ -355,7 +355,18 @@
     }
     .btn-compact {
       padding: 8px 16px;
-      min-height: auto;
+      min-height: 44px;
+    }
+
+    /* Two-row button layout */
+    .button-row {
+      display: flex;
+      gap: 12px;
+      margin-top: 16px;
+    }
+    .button-row > * {
+      flex: 1;
+      min-width: 0;
     }
 
     /* Photo Grid */
@@ -805,17 +816,17 @@
       <div class="card-title">Capture Receipts</div>
       <div class="card-desc">Upload or photograph your receipts for AI extraction.</div>
 
-      <div class="upload-actions-row">
+      <div class="button-row">
         <button type="button" class="upload-btn" id="uploadBtn">
           <i class="fas fa-cloud-arrow-up"></i>
           <span>Upload<br>max 5MB, 5 photos</span>
         </button>
         <input type="file" id="receiptInput" accept="image/*" multiple style="display:none;">
-        <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none;">
         <button type="button" class="camera-btn" id="cameraBtn">
           <i class="fas fa-camera"></i>
           <span>Take photo</span>
         </button>
+        <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none;">
       </div>
 
       <div class="photo-grid" id="photoGrid"></div>
@@ -827,7 +838,7 @@
         </label>
       </div>
 
-      <div class="action-bar" style="margin-top:20px;">
+      <div class="button-row">
         <button class="btn btn-outline btn-compact" id="backToSummaryBtn">
           Back
         </button>
@@ -1469,10 +1480,9 @@ function closeLightbox() {
 function updateExtractButtonLabel() {
   const checkbox = document.getElementById('extractAiCheckbox');
   const btn = document.getElementById('extractBtn');
-  const icon = checkbox.checked ? 'fa-wand-magic-sparkles' : 'fa-pen-to-square';
   const line1 = checkbox.checked ? 'Extract' : 'Enter';
   const line2 = checkbox.checked ? 'with AI' : 'Details';
-  btn.innerHTML = `<i class="fas ${icon}"></i> ${line1}<br>${line2}`;
+  btn.innerHTML = `${line1}<br>${line2}`;
 }
 
 function handleExtractOrEnterDetails() {

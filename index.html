@@ -361,6 +361,18 @@
       font-size: 24px;
     }
 
+    /* Button row layout - two equal buttons side by side */
+    .button-row {
+      display: flex;
+      gap: 12px;
+      margin-top: 16px;
+      margin-bottom: 16px;
+    }
+    .button-row > button {
+      flex: 1;
+      min-width: 0;
+    }
+
     /* Two-line action buttons */
     .btn-two-line {
       flex-direction: column;
@@ -370,17 +382,6 @@
     .btn-compact {
       padding: 8px 16px;
       min-height: 44px;
-    }
-
-    /* Two-row button layout */
-    .button-row {
-      display: flex;
-      gap: 12px;
-      margin-top: 16px;
-    }
-    .button-row > * {
-      flex: 1;
-      min-width: 0;
     }
 
     /* Photo Grid */
@@ -835,13 +836,13 @@
           <i class="fas fa-cloud-arrow-up"></i>
           <span>Upload<br>max 5MB, 5 photos</span>
         </button>
-        <input type="file" id="receiptInput" accept="image/*" multiple style="display:none;">
         <button type="button" class="camera-btn" id="cameraBtn">
           <i class="fas fa-camera"></i>
           <span>Take photo</span>
         </button>
-        <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none;">
       </div>
+      <input type="file" id="receiptInput" accept="image/*" multiple style="display:none;">
+      <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none;">
 
       <div class="photo-grid" id="photoGrid"></div>
 

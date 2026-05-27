@@ -1316,9 +1316,23 @@ function initPhotoUpload() {
   cameraInput.addEventListener('change', (e) => handleFiles(e.target.files));
 }
 
+const MAX_PHOTOS = 5;
+
 function handleFiles(files) {
-  Array.from(files).forEach(file => {
-    if (!file.type.startsWith('image/')) return;
+  const remainingSlots = MAX_PHOTOS - photos.length;
+  
+  if (remainingSlots <= 0) {
+    showToast(`Maximum ${MAX_PHOTOS} photos allowed`, 'error');
+    return;
+  }
+  
+  const filesToProcess = Array.from(files).filter(file => file.type.startsWith('image/')).slice(0, remainingSlots);
+  
+  if (filesToProcess.length < Array.from(files).filter(f => f.type.startsWith('image/')).length) {
+    showToast(`Only ${remainingSlots} slot${remainingSlots === 1 ? '' : 's'} remaining. ${MAX_PHOTOS} photos max.`, 'error');
+  }
+  
+  filesToProcess.forEach(file => {
     if (file.size > 5 * 1024 * 1024) {
       showToast(file.name + ' is too large (max 5MB)', 'error');
       return;
@@ -1329,9 +1343,25 @@ function handleFiles(files) {
       const id = 'photo_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
       photos.push({ id, dataUrl: e.target.result, file });
       renderPhotoGrid();
+      updatePhotoUploadState();
     };
     reader.readAsDataURL(file);
   });
+}
+
+function updatePhotoUploadState() {
+  const uploadZone = document.getElementById('uploadZone');
+  const cameraBtn = document.getElementById('cameraBtn');
+  const isFull = photos.length >= MAX_PHOTOS;
+  
+  if (uploadZone) {
+    uploadZone.style.opacity = isFull ? '0.5' : '1';
+    uploadZone.style.pointerEvents = isFull ? 'none' : 'auto';
+  }
+  if (cameraBtn) {
+    cameraBtn.disabled = isFull;
+    cameraBtn.style.opacity = isFull ? '0.5' : '1';
+  }
 }
 
 function renderPhotoGrid() {
@@ -1346,12 +1376,14 @@ function renderPhotoGrid() {
   `).join('');
   
   document.getElementById('extractBtn').disabled = photos.length === 0;
+  updatePhotoUploadState();
 }
 
 function removePhoto(id) {
   photos = photos.filter(p => p.id !== id);
   receipts = receipts.filter(r => r.photoId !== id);
   renderPhotoGrid();
+  updatePhotoUploadState();
 }
 
 function openLightbox(dataUrl) {

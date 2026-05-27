@@ -1087,7 +1087,7 @@ async function handleSaveSetup() {
     await saveEncryptedConfig({ poeKey, appsScriptUrl, secretToken }, pin);
     config = { poeKey, appsScriptUrl, secretToken };
     showToast('Configuration saved!', 'success');
-    setStep(2);
+    showWelcomePanel();
   } catch (e) {
     showToast('Error saving: ' + e.message, 'error');
   }

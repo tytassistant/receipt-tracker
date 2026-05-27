@@ -736,9 +736,14 @@
 
       <div class="photo-grid" id="photoGrid"></div>
 
-      <button class="btn btn-accent btn-block" id="extractBtn" style="margin-top:20px;" disabled>
-        <i class="fas fa-wand-magic-sparkles"></i> Extract with AI
-      </button>
+      <div class="action-bar" style="margin-top:20px;">
+        <button class="btn btn-outline" id="backToSummaryBtn">
+          <i class="fas fa-arrow-left"></i> Back
+        </button>
+        <button class="btn btn-accent" id="extractBtn" disabled>
+          <i class="fas fa-wand-magic-sparkles"></i> Extract with AI
+        </button>
+      </div>
 
       <div id="extractionLoading" style="display:none; margin-top:20px;">
         <div class="extraction-progress">
@@ -752,8 +757,8 @@
   <!-- ======= SECTION 3: REVIEW ======= -->
   <div class="section" id="section-review">
     <div class="card">
-      <div class="card-title">Review Extracted Data</div>
-      <div class="card-desc">Edit any fields before saving to Google Sheets.</div>
+      <div class="card-title">Input and Review Data</div>
+      <div class="card-desc">Edit or add before saving.</div>
 
       <div style="overflow-x:auto;">
         <table class="review-table" id="reviewTable">
@@ -774,7 +779,7 @@
       </div>
 
       <button class="add-row-btn" id="addRowBtn">
-        <i class="fas fa-plus"></i> Add manual entry
+        <i class="fas fa-plus"></i> Add entry
       </button>
 
       <div class="action-bar">
@@ -1758,6 +1763,7 @@ document.addEventListener('DOMContentLoaded', () => {
   
   // Capture buttons
   document.getElementById('extractBtn').addEventListener('click', extractReceipts);
+  document.getElementById('backToSummaryBtn').addEventListener('click', showWelcomePanel);
   
   // Review buttons
   document.getElementById('addRowBtn').addEventListener('click', addManualReceipt);

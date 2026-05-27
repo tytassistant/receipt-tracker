@@ -955,6 +955,7 @@ function showToast(message, type = '') {
 }
 
 function setStep(stepNum) {
+  /* Stepper update code removed - stepper display no longer exists
   document.querySelectorAll('.step-item').forEach(item => {
     const itemStep = parseInt(item.dataset.step);
     item.classList.remove('active', 'completed');
@@ -965,6 +966,7 @@ function setStep(stepNum) {
   document.querySelectorAll('.step-connector').forEach((conn, idx) => {
     conn.classList.toggle('done', idx < stepNum - 1);
   });
+  */
   
   Object.values(sections).forEach(sec => sec.classList.remove('visible'));
   const stepNames = ['setup', 'capture', 'review', 'save'];

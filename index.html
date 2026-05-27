@@ -600,7 +600,7 @@
       <div class="field">
         <label>Google Apps Script URL</label>
         <div class="pin-field-wrap">
-          <input type="password" id="setupAppsScriptUrl" placeholder="https://script.google.com/.../exec" autocomplete="off">
+          <input type="text" id="setupAppsScriptUrl" placeholder="https://script.google.com/.../exec" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false">
           <button type="button" class="pin-toggle-btn" data-target="setupAppsScriptUrl"><i class="fas fa-eye"></i></button>
         </div>
         <div class="hint">Your Google Apps Script web app URL</div>
@@ -620,14 +620,14 @@
         
         <div class="field" style="margin-bottom:8px;">
           <div class="pin-field-wrap">
-            <input type="password" id="setupPin" placeholder="Enter 6-character PIN" maxlength="6" autocomplete="off">
+            <input type="password" id="setupPin" placeholder="Enter 6-character PIN" maxlength="6" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" data-1p-ignore="true" data-protonpass-ignore="true" data-bwignore="true" data-lpignore="true">
             <button type="button" class="pin-toggle-btn" data-target="setupPin"><i class="fas fa-eye"></i></button>
           </div>
         </div>
         
         <div class="field" style="margin-bottom:4px;">
           <div class="pin-field-wrap">
-            <input type="password" id="setupPinConfirm" placeholder="Confirm PIN" maxlength="6" autocomplete="off">
+            <input type="password" id="setupPinConfirm" placeholder="Confirm PIN" maxlength="6" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" data-1p-ignore="true" data-protonpass-ignore="true" data-bwignore="true" data-lpignore="true">
             <button type="button" class="pin-toggle-btn" data-target="setupPinConfirm"><i class="fas fa-eye"></i></button>
           </div>
         </div>
@@ -648,7 +648,7 @@
       
       <div class="field" style="margin-bottom:4px;">
         <div class="pin-field-wrap">
-          <input type="password" id="unlockPin" placeholder="Enter 6-character PIN" maxlength="6" autocomplete="off">
+          <input type="password" id="unlockPin" placeholder="Enter 6-character PIN" maxlength="6" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" data-1p-ignore="true" data-protonpass-ignore="true" data-bwignore="true" data-lpignore="true">
           <button type="button" class="pin-toggle-btn" data-target="unlockPin"><i class="fas fa-eye"></i></button>
         </div>
         <div class="pin-error" id="unlockPinError"></div>
@@ -680,7 +680,7 @@
       <div class="field">
         <label>Google Apps Script URL</label>
         <div class="pin-field-wrap">
-          <input type="password" id="changeAppsScriptUrl" placeholder="https://script.google.com/.../exec" autocomplete="off">
+          <input type="text" id="changeAppsScriptUrl" placeholder="https://script.google.com/.../exec" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false">
           <button type="button" class="pin-toggle-btn" data-target="changeAppsScriptUrl"><i class="fas fa-eye"></i></button>
         </div>
       </div>
@@ -697,13 +697,13 @@
         <div class="card-desc" style="margin-bottom:10px;">Enter your existing or new 6-character PIN to re-encrypt.</div>
         <div class="field" style="margin-bottom:8px;">
           <div class="pin-field-wrap">
-            <input type="password" id="changePin" placeholder="Enter 6-character PIN" maxlength="6" autocomplete="off">
+            <input type="password" id="changePin" placeholder="Enter 6-character PIN" maxlength="6" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" data-1p-ignore="true" data-protonpass-ignore="true" data-bwignore="true" data-lpignore="true">
             <button type="button" class="pin-toggle-btn" data-target="changePin"><i class="fas fa-eye"></i></button>
           </div>
         </div>
         <div class="field" style="margin-bottom:4px;">
           <div class="pin-field-wrap">
-            <input type="password" id="changePinConfirm" placeholder="Confirm PIN" maxlength="6" autocomplete="off">
+            <input type="password" id="changePinConfirm" placeholder="Confirm PIN" maxlength="6" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" data-1p-ignore="true" data-protonpass-ignore="true" data-bwignore="true" data-lpignore="true">
             <button type="button" class="pin-toggle-btn" data-target="changePinConfirm"><i class="fas fa-eye"></i></button>
           </div>
         </div>
@@ -1161,7 +1161,7 @@ async function handleSaveChange() {
     await saveEncryptedConfig({ poeKey, appsScriptUrl, secretToken }, pin);
     config = { poeKey, appsScriptUrl, secretToken };
     showToast('Configuration updated!', 'success');
-    setStep(2);
+    showWelcomePanel();
   } catch (e) {
     showToast('Error saving: ' + e.message, 'error');
   }

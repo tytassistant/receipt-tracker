@@ -453,6 +453,21 @@
       min-height: 44px;
     }
 
+    /* Icon + text horizontal layout */
+    .btn-icon-text {
+      flex-direction: row !important;
+      align-items: center !important;
+      justify-content: center;
+      gap: 8px;
+    }
+    .btn-icon-text i {
+      font-size: 14px;
+    }
+    .btn-icon-text span {
+      text-align: left;
+      line-height: 1.3;
+    }
+
     /* Photo Grid */
     .photo-grid {
       display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
@@ -923,11 +938,13 @@
       </div>
 
       <div class="button-row">
-        <button class="btn btn-outline btn-compact" id="backToSummaryBtn">
-          Back
+        <button class="btn btn-outline btn-compact btn-icon-text" id="backToSummaryBtn">
+          <i class="fas fa-arrow-left"></i>
+          <span>Back</span>
         </button>
-        <button class="btn btn-accent btn-compact btn-two-line" id="extractBtn" disabled>
-          Extract<br>with AI
+        <button class="btn btn-accent btn-compact btn-two-line btn-icon-text" id="extractBtn" disabled>
+          <i class="fas fa-wand-magic-sparkles"></i>
+          <span>Extract<br>with AI</span>
         </button>
       </div>
 
@@ -1564,9 +1581,10 @@ function closeLightbox() {
 function updateExtractButtonLabel() {
   const checkbox = document.getElementById('extractAiCheckbox');
   const btn = document.getElementById('extractBtn');
+  const icon = checkbox.checked ? 'fa-wand-magic-sparkles' : 'fa-pen-to-square';
   const line1 = checkbox.checked ? 'Extract' : 'Enter';
   const line2 = checkbox.checked ? 'with AI' : 'Details';
-  btn.innerHTML = `${line1}<br>${line2}`;
+  btn.innerHTML = `<i class="fas ${icon}"></i><span>${line1}<br>${line2}</span>`;
 }
 
 function handleExtractOrEnterDetails() {

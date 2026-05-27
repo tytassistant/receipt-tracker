@@ -468,6 +468,11 @@
       line-height: 1.3;
     }
 
+    /* Primary button (Confirm & Save) icon support */
+    .btn-primary.btn-icon-text i {
+      color: #fff;
+    }
+
     /* Photo Grid */
     .photo-grid {
       display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
@@ -913,7 +918,7 @@
   <div class="section" id="section-capture">
     <div class="card">
       <div class="card-title">Capture Receipts</div>
-      <div class="card-desc">Upload or photograph your receipts for AI extraction.</div>
+      <div class="card-desc">Upload or photograph your receipts.</div>
 
       <div class="button-row">
         <button type="button" class="upload-btn" id="uploadBtn">
@@ -985,12 +990,14 @@
         <i class="fas fa-plus"></i> Add entry
       </button>
 
-      <div class="action-bar">
-        <button class="btn btn-outline" id="backToCaptureBtn">
-          <i class="fas fa-arrow-left"></i> Back
+      <div class="button-row">
+        <button class="btn btn-outline btn-compact btn-icon-text" id="backToCaptureBtn">
+          <i class="fas fa-arrow-left"></i>
+          <span>Back</span>
         </button>
-        <button class="btn btn-primary" id="confirmSaveBtn">
-          <i class="fas fa-cloud-arrow-up"></i> Confirm & Save
+        <button class="btn btn-primary btn-compact btn-two-line btn-icon-text" id="confirmSaveBtn">
+          <i class="fas fa-cloud-arrow-up"></i>
+          <span>Confirm &<br>Save</span>
         </button>
       </div>
     </div>
@@ -1027,7 +1034,7 @@
       <div id="saveErrorDetail" style="display:none; margin-top:16px; padding:12px; background:var(--danger-light); border-radius:var(--radius-sm); color:var(--danger); font-family:monospace; font-size:12px; white-space:pre-wrap; word-break:break-all; border:1px solid var(--danger);"></div>
       <div class="action-bar" style="justify-content:center; gap:12px; flex-wrap:wrap;">
         <button class="btn btn-accent" id="newReceiptBtn">
-          <i class="fas fa-receipt"></i> Capture more receipts
+          <i class="fas fa-receipt"></i> Capture More Receipts
         </button>
         <button class="btn btn-outline" id="returnToSummaryBtn">
           <i class="fas fa-chart-pie"></i> Return to Summary

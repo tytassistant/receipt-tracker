@@ -238,7 +238,7 @@ function handleQueryReceipts(data) {
 
   // Direct folder access with ID caching for performance
   var folderStart = new Date().getTime();
-  var rootFolder = getOrCreateRootFolderCached();
+  var rootFolder = getOrCreateRootFolder();
   timings.getFolder = new Date().getTime() - folderStart;
   
   var sheetStart = new Date().getTime();
@@ -341,41 +341,39 @@ function handleQueryReceipts(data) {
 // Drive folder management
 // ============================================================
 
-// Get or create the root /receipt-tracker/ folder (with ID caching for performance)
+// Get folder by ID from Script Properties (instant, no search)
+function getFolderByIdCached() {
+  var props = PropertiesService.getScriptProperties();
+  var folderId = props.getProperty("RECEIPTS_FOLDER_ID");
+  
+  if (!folderId) {
+    throw new Error("RECEIPTS_FOLDER_ID not set in Script Properties");
+  }
+  
+  try {
+    return DriveApp.getFolderById(folderId);
+  } catch (e) {
+    throw new Error("Invalid RECEIPTS_FOLDER_ID or folder was deleted: " + folderId);
+  }
+}
+
+// Get or create the root /receipt-tracker/ folder (fallback to name search if no ID)
 function getOrCreateRootFolder() {
+  // Try ID-based lookup first
+  try {
+    var folder = getFolderByIdCached();
+    Logger.log("[getOrCreateRootFolder] Using cached folder ID");
+    return folder;
+  } catch (e) {
+    Logger.log("[getOrCreateRootFolder] ID lookup failed, falling back to name search: " + e.message);
+  }
+  
+  // Fallback: search by name
   var folders = DriveApp.getFoldersByName(RECEIPTS_FOLDER);
   if (folders.hasNext()) {
     return folders.next();
   }
   return DriveApp.createFolder(RECEIPTS_FOLDER);
-}
-
-// Get folder with ID caching for faster repeated access
-function getOrCreateRootFolderCached() {
-  var props = PropertiesService.getScriptProperties();
-  var folderId = props.getProperty("RECEIPTS_FOLDER_ID");
-  
-  if (folderId) {
-    try {
-      return DriveApp.getFolderById(folderId);
-    } catch (e) {
-      // Folder was deleted or ID invalid, fall through to search
-      Logger.log("[getOrCreateRootFolderCached] Cached ID invalid, searching Drive...");
-    }
-  }
-  
-  // Search and cache the ID
-  var folders = DriveApp.getFoldersByName(RECEIPTS_FOLDER);
-  if (folders.hasNext()) {
-    var folder = folders.next();
-    props.setProperty("RECEIPTS_FOLDER_ID", folder.getId());
-    return folder;
-  }
-  
-  // Create and cache
-  var newFolder = DriveApp.createFolder(RECEIPTS_FOLDER);
-  props.setProperty("RECEIPTS_FOLDER_ID", newFolder.getId());
-  return newFolder;
 }
 
 // Get or create /receipt-tracker/YYYYMMDD/ folder

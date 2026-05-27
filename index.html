@@ -339,9 +339,23 @@
       align-items: center;
       justify-content: center;
       gap: 4px;
-      min-height: 76px;
+      font-family: 'Bricolage Grotesque', sans-serif;
       font-size: 13px;
+      font-weight: 600;
+      color: var(--accent);
+      background: var(--accent-light);
+      border: 1px solid var(--accent);
+      border-radius: var(--radius-sm);
+      padding: 16px 12px;
+      cursor: pointer;
+      transition: var(--transition);
+      min-height: 76px;
+      text-align: center;
       line-height: 1.3;
+    }
+    .upload-actions-row .camera-btn:hover {
+      background: var(--accent);
+      color: #fff;
     }
     .upload-actions-row .camera-btn i {
       font-size: 24px;

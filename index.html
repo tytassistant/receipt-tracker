@@ -499,7 +499,8 @@
     }
     .photo-item .remove-btn:hover { background: rgba(220, 53, 69, 1); }
 
-    /* Review Table */
+    /* Review Table - COMMENTED OUT, replaced by receipt cards */
+    /*
     .review-table {
       width: 100%; border-collapse: collapse;
       margin: 20px 0; background: var(--bg-card);
@@ -537,6 +538,103 @@
       border: 1px solid var(--border);
       border-radius: var(--radius-sm); outline: none;
       min-height: 60px;
+    }
+    */
+
+    /* Receipt Cards - Mobile-optimized review panel */
+    .receipt-cards {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      margin: 16px 0;
+    }
+    .receipt-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 16px;
+      position: relative;
+    }
+    .receipt-card:not(:last-child) {
+      border-bottom: 2px dashed var(--border);
+      padding-bottom: 20px;
+    }
+    .receipt-card-header {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    .receipt-card-thumb {
+      width: 60px;
+      height: 60px;
+      object-fit: cover;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    .receipt-card-thumb:hover {
+      opacity: 0.9;
+    }
+    .receipt-card-field-full {
+      flex: 1;
+      min-width: 0;
+    }
+    .receipt-card-row {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    .receipt-card-row .receipt-card-field {
+      flex: 1;
+      min-width: 0;
+    }
+    .receipt-card-field label,
+    .receipt-card-field-full label {
+      display: block;
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .receipt-card-field input,
+    .receipt-card-field select,
+    .receipt-card-field-full input,
+    .receipt-card-field-full select {
+      width: 100%;
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-family: inherit;
+      font-size: 14px;
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+    }
+    .receipt-card-field input:focus,
+    .receipt-card-field select:focus,
+    .receipt-card-field-full input:focus,
+    .receipt-card-field-full select:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px var(--accent-light);
+    }
+    .receipt-card-actions {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+    }
+    .receipt-card-actions .btn-icon-delete {
+      background: transparent;
+      border: none;
+      color: var(--danger);
+      cursor: pointer;
+      padding: 8px;
+      font-size: 16px;
+      transition: var(--transition);
+    }
+    .receipt-card-actions .btn-icon-delete:hover {
+      color: var(--danger-hover);
     }
     .photo-thumb {
       width: 60px; height: 60px; object-fit: cover;
@@ -968,23 +1066,7 @@
       <div class="card-title">Input and Review Data</div>
       <div class="card-desc">Edit or add before saving.</div>
 
-      <div style="overflow-x:auto;">
-        <table class="review-table" id="reviewTable">
-          <thead>
-            <tr>
-              <th style="width:70px;">Photo</th>
-              <th>Description</th>
-              <th style="width:100px;">Date</th>
-              <th style="width:90px;">Amount</th>
-              <th style="width:80px;">Currency</th>
-              <th style="width:120px;">Category</th>
-              <th>Remarks</th>
-              <th style="width:40px;"></th>
-            </tr>
-          </thead>
-          <tbody id="reviewTableBody"></tbody>
-        </table>
-      </div>
+      <div class="receipt-cards" id="receiptCards"></div>
 
       <button class="add-row-btn" id="addRowBtn">
         <i class="fas fa-plus"></i> Add entry
@@ -1820,34 +1902,58 @@ function compressImage(dataUrl, maxWidth) {
 }
 
 // ==========================================
-// REVIEW TABLE
+// REVIEW CARDS (Mobile-Optimized)
 // ==========================================
 
 function renderReviewTable() {
-  const tbody = document.getElementById('reviewTableBody');
-  tbody.innerHTML = receipts.map(r => `
-    <tr data-id="${r.id}">
-      <td><img src="${r.imageDataUrl}" class="photo-thumb" onclick="openLightbox('${r.imageDataUrl}')"></td>
-      <td><input type="text" value="${escapeHtml(r.vendor)}" onchange="updateReceipt('${r.id}', 'vendor', this.value)" placeholder="Description"></td>
-      <td><input type="date" value="${r.date || ''}" onchange="updateReceipt('${r.id}', 'date', this.value)"></td>
-      <td><input type="number" step="0.01" value="${r.amount}" onchange="updateReceipt('${r.id}', 'amount', this.value)" placeholder="0.00"></td>
-      <td>
-        <select onchange="updateReceipt('${r.id}', 'currency', this.value)">
-          ${['HKD','USD','EUR','GBP','JPY','CNY','SGD','AUD','CAD','CHF','Other'].map(c => 
-            `<option value="${c}" ${r.currency === c ? 'selected' : ''}>${c}</option>`
-          ).join('')}
-        </select>
-      </td>
-      <td>
-        <select onchange="updateReceipt('${r.id}', 'category', this.value)">
-          ${['Food','Transport','Shopping','Entertainment','Utilities','Healthcare','Education','Travel','Business','Other'].map(c => 
-            `<option value="${c}" ${r.category === c ? 'selected' : ''}>${c}</option>`
-          ).join('')}
-        </select>
-      </td>
-      <td><input type="text" value="${escapeHtml(r.remarks || '')}" onchange="updateReceipt('${r.id}', 'remarks', this.value)" placeholder="Notes..."></td>
-      <td><button class="delete-btn" onclick="deleteReceipt('${r.id}')"><i class="fas fa-trash"></i></button></td>
-    </tr>
+  const container = document.getElementById('receiptCards');
+  if (!container) return;
+  
+  container.innerHTML = receipts.map(r => `
+    <div class="receipt-card" data-id="${r.id}">
+      <div class="receipt-card-header">
+        <img src="${r.imageDataUrl}" class="receipt-card-thumb" onclick="openLightbox('${r.imageDataUrl}')">
+        <div class="receipt-card-field-full">
+          <label>Description</label>
+          <input type="text" value="${escapeHtml(r.vendor)}" onchange="updateReceipt('${r.id}', 'vendor', this.value)" placeholder="Description">
+        </div>
+      </div>
+      <div class="receipt-card-row">
+        <div class="receipt-card-field">
+          <label>Date</label>
+          <input type="date" value="${r.date || ''}" onchange="updateReceipt('${r.id}', 'date', this.value)">
+        </div>
+        <div class="receipt-card-field">
+          <label>Category</label>
+          <select onchange="updateReceipt('${r.id}', 'category', this.value)">
+            ${['Food','Transport','Shopping','Entertainment','Utilities','Healthcare','Education','Travel','Business','Other'].map(c => 
+              `<option value="${c}" ${r.category === c ? 'selected' : ''}>${c}</option>`
+            ).join('')}
+          </select>
+        </div>
+      </div>
+      <div class="receipt-card-row">
+        <div class="receipt-card-field">
+          <label>Currency</label>
+          <select onchange="updateReceipt('${r.id}', 'currency', this.value)">
+            ${['HKD','USD','EUR','GBP','JPY','CNY','SGD','AUD','CAD','CHF','Other'].map(c => 
+              `<option value="${c}" ${r.currency === c ? 'selected' : ''}>${c}</option>`
+            ).join('')}
+          </select>
+        </div>
+        <div class="receipt-card-field">
+          <label>Amount</label>
+          <input type="number" step="0.01" value="${r.amount}" onchange="updateReceipt('${r.id}', 'amount', this.value)" placeholder="0.00">
+        </div>
+      </div>
+      <div class="receipt-card-field-full">
+        <label>Remarks</label>
+        <input type="text" value="${escapeHtml(r.remarks || '')}" onchange="updateReceipt('${r.id}', 'remarks', this.value)" placeholder="Notes...">
+      </div>
+      <div class="receipt-card-actions">
+        <button class="btn-icon-delete" onclick="deleteReceipt('${r.id}')" title="Delete receipt"><i class="fas fa-trash"></i></button>
+      </div>
+    </div>
   `).join('');
 }
 

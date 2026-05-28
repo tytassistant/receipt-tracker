@@ -562,17 +562,17 @@ function handleUpdateReceipt(data) {
     return new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
   }
 
-  // Build updated row: [Date, Modified_at, Description, Amount, Currency, Category, Remarks]
-  // Columns: B(Date), D(Modified_at), E(Description), F(Amount), G(Currency), H(Category), I(Remarks)
   var modifiedAt = formatHKT(new Date());
-  var updatedRow = [
-    [parseDateStringToObject(data.date), modifiedAt, data.description || "",
-     parseFloat(data.amount) || 0, data.currency || "HKD",
-     data.category || "Other", data.remarks || ""]
-  ];
 
-  // Write to columns B, D, E, F, G, H, I (columns 2, 4, 5, 6, 7, 8, 9)
-  sheet.getRange(rowIndex, 2, 1, 7).setValues(updatedRow);
+  // Write to each target column individually so we skip C (Created_at) and target I (Remarks) correctly
+  // Column targets: B=date, D=modifiedAt, E=description, F=amount, G=currency, H=category, I=remarks
+  sheet.getRange(rowIndex, 2).setValue(parseDateStringToObject(data.date));            // B: Date
+  sheet.getRange(rowIndex, 4).setValue(modifiedAt);                                    // D: Modified_at
+  sheet.getRange(rowIndex, 5).setValue(data.description || "");                      // E: Description
+  sheet.getRange(rowIndex, 6).setValue(parseFloat(data.amount) || 0);                // F: Amount
+  sheet.getRange(rowIndex, 7).setValue(data.currency || "HKD");                       // G: Currency
+  sheet.getRange(rowIndex, 8).setValue(data.category || "Other");                     // H: Category
+  sheet.getRange(rowIndex, 9).setValue(data.remarks || "");                           // I: Remarks
 
   return jsonResponse(200, {
     success: true,

@@ -616,8 +616,25 @@ function handleDeleteReceipt(data) {
     return jsonResponse(404, { error: "Receipt not found: " + id });
   }
 
+  // Read imageUrl from the row before deleting (to get file ID)
+  var imageUrlCell = sheet.getRange(rowIndex, 11).getValue(); // Column K: Image_URL
+
   // Delete the entire row
   sheet.deleteRows(rowIndex, 1);
+
+  // Try to move the image file to trash
+  if (imageUrlCell && typeof imageUrlCell === "string") {
+    var fileIdMatch = imageUrlCell.match(/file\/d\/([^/?]+)/);
+    if (fileIdMatch && fileIdMatch[1]) {
+      try {
+        var file = DriveApp.getFileById(fileIdMatch[1]);
+        file.setTrashed(true); // Move to trash (does not permanently delete)
+        Logger.log("Moved file to trash: " + fileIdMatch[1]);
+      } catch (e) {
+        Logger.log("Could not trash file " + fileIdMatch[1] + ": " + e.message);
+      }
+    }
+  }
 
   return jsonResponse(200, {
     success: true,

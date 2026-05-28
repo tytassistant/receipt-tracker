@@ -648,7 +648,8 @@
       border-radius: var(--radius-sm);
     }
     /* Textarea for remarks */
-    .receipt-card-field textarea {
+    .receipt-card-field textarea,
+    .receipt-card-field-full textarea {
       width: 100%;
       padding: 8px 10px;
       border: 1px solid var(--border);
@@ -660,8 +661,10 @@
       resize: vertical;
       min-height: 72px;
       line-height: 1.4;
+      box-sizing: border-box;
     }
-    .receipt-card-field textarea:focus {
+    .receipt-card-field textarea:focus,
+    .receipt-card-field-full textarea:focus {
       outline: none;
       border-color: var(--accent);
       box-shadow: 0 0 0 2px var(--accent-light);

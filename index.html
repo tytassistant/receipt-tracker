@@ -1659,9 +1659,10 @@ function renderEditCard(receipt) {
   const container = document.getElementById('editReceiptCard');
   
   // Use Google Drive thumbnail if available, otherwise placeholder
-  const thumbUrl = receipt.imageUrl ? 
-    receipt.imageUrl.replace('/view', '/preview').replace('open?id=', 'uc?id=') : 
-    '';
+  const fileId = receipt.imageUrl?.match(/file\/d\/([^/?]+)/)?.[1];
+  const thumbUrl = fileId 
+    ? `https://drive.google.com/thumbnail?id=${fileId}&sz=w300` 
+    : '';
   
   container.innerHTML = `
     <div class="receipt-card">

@@ -1660,12 +1660,12 @@ function renderEditCard(receipt) {
   
   // Use Google Drive direct image URL if available, otherwise placeholder
   const fileId = receipt.imageUrl?.match(/file\/d\/([^/?]+)/)?.[1];
-  const imgSrc = fileId ? `https://drive.google.com/uc?export=view&id=${fileId}` : '';
+  const imgSrc = fileId ? `https://drive.google.com/thumbnail?id=${fileId}&sz=w800` : '';
   
   container.innerHTML = `
     <div class="receipt-card">
       <div class="receipt-card-header">
-${imgSrc ? `<img src="${imgSrc}" class="receipt-card-thumb" onclick="openLightbox('${receipt.imageUrl}')">` : '<div class="receipt-card-thumb" style="background:var(--bg-secondary); display:flex; align-items:center; justify-content:center; color:var(--text-muted);"><i class="fas fa-receipt"></i></div>'}
+${imgSrc ? `<img src="${imgSrc}" class="receipt-card-thumb" onclick="openLightbox('${imgSrc}')">` : '<div class="receipt-card-thumb" style="background:var(--bg-secondary); display:flex; align-items:center; justify-content:center; color:var(--text-muted);"><i class="fas fa-receipt"></i></div>'}
         <div class="receipt-card-field-full">
           <label>Description</label>
           <input type="text" id="editDescription" value="${escapeHtml(receipt.description || '')}" placeholder="Description">

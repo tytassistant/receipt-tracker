@@ -1068,7 +1068,7 @@
 
       <div class="photo-grid" id="photoGrid"></div>
 
-      <div class="checkbox-field" style="margin-top:20px; margin-bottom:16px; display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+      <div id="extractAiSection" class="checkbox-field" style="margin-top:20px; margin-bottom:16px; display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
         <label class="checkbox-label" style="display:flex; align-items:center; gap:10px; cursor:pointer; font-size:14px; color:var(--text-secondary);">
           <input type="checkbox" id="extractAiCheckbox" checked style="width:18px; height:18px; cursor:pointer;">
           <span>Extract with AI</span>
@@ -1403,8 +1403,8 @@ async function handleSaveSetup() {
   const pin = document.getElementById('setupPin').value;
   const pinConfirm = document.getElementById('setupPinConfirm').value;
   
-  if (!poeKey || !appsScriptUrl || !secretToken) {
-    document.getElementById('setupPinError').textContent = 'Please fill in all fields';
+  if (!appsScriptUrl || !secretToken) {
+    document.getElementById('setupPinError').textContent = 'Apps Script URL and Secret Token are required.';
     return;
   }
   
@@ -1477,8 +1477,8 @@ async function handleSaveChange() {
   const pin = document.getElementById('changePin').value;
   const pinConfirm = document.getElementById('changePinConfirm').value;
   
-  if (!poeKey || !appsScriptUrl || !secretToken) {
-    document.getElementById('changePinError').textContent = 'Please fill in all fields';
+  if (!appsScriptUrl || !secretToken) {
+    document.getElementById('changePinError').textContent = 'Apps Script URL and Secret Token are required.';
     return;
   }
   
@@ -1510,6 +1510,23 @@ function handleForgotPin() {
 }
 
 // ==========================================
+// AI EXTRACTION CONTROLS
+// ==========================================
+
+function updateAiSectionVisibility() {
+  const section = document.getElementById('extractAiSection');
+  const checkbox = document.getElementById('extractAiCheckbox');
+  if (!section || !checkbox) return;
+  
+  if (config && config.poeKey) {
+    section.style.display = 'flex';
+  } else {
+    section.style.display = 'none';
+    checkbox.checked = false;
+  }
+}
+
+// ==========================================
 // WELCOME / SUMMARY PANEL
 // ==========================================
 
@@ -1524,6 +1541,9 @@ function showWelcomePanel() {
   
   document.getElementById('summaryStartDate').value = formatDateForInput(startOfMonth);
   document.getElementById('summaryEndDate').value = formatDateForInput(today);
+  
+  // Update AI section visibility based on whether Poe key is configured
+  updateAiSectionVisibility();
   
   // Load summary data
   loadSummaryData();

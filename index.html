@@ -1715,6 +1715,7 @@ function deleteCurrentReceipt() {
   const receipt = window.summaryReceipts[currentEditIndex];
   
   if (confirm(`Delete this receipt: ${receipt.description || 'Unnamed'} (${receipt.date || 'no date'})?`)) {
+    showToast('Deleting receipt...', 'info');
     callApi('deleteReceipt', { id: receipt.id }).then(result => {
       if (result.success) {
         showToast('Receipt deleted', 'success');
@@ -1748,6 +1749,10 @@ async function saveEditChanges() {
     return;
   }
   
+  // Confirm before saving
+  if (!confirm(`Save changes to: ${receipt.description || 'Unnamed'}?`)) return;
+  
+  showToast('Saving changes...', 'info');
   try {
     const result = await callApi('updateReceipt', updates);
     if (result.success) {

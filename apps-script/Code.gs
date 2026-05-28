@@ -1,5 +1,6 @@
 // ============================================================
 // Receipt Tracker – Google Apps Script Backend (Code.gs)
+// Version: v1.0 | Date: 2026-05-28
 // ============================================================
 
 // Folder name in Google Drive where receipts are stored

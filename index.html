@@ -1018,10 +1018,10 @@
         <table style="width:100%; border-collapse:collapse; font-size:14px; margin-bottom:20px;">
           <thead>
             <tr style="background:var(--bg-secondary);">
-              <th style="padding:10px 8px; text-align:center; font-weight:600; font-size:12px; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted); width:40px;">Edit</th>
               <th style="padding:10px 12px; text-align:left; font-weight:600; font-size:12px; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted);">Description</th>
               <th style="padding:10px 12px; text-align:left; font-weight:600; font-size:12px; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted);">Date</th>
               <th style="padding:10px 12px; text-align:right; font-weight:600; font-size:12px; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted);">Amount</th>
+              <th style="padding:10px 8px; text-align:center; font-weight:600; font-size:12px; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted); width:40px;">Edit</th>
             </tr>
           </thead>
           <tbody id="summaryTableBody"></tbody>
@@ -1174,7 +1174,7 @@
         </button>
         <button class="btn btn-primary btn-compact btn-icon-text" id="saveEditBtn">
           <i class="fas fa-save"></i>
-          <span>Save Changes</span>
+          <span>Save</span>
         </button>
       </div>
     </div>
@@ -1579,14 +1579,14 @@ async function loadSummaryData() {
     const tbody = document.getElementById('summaryTableBody');
     tbody.innerHTML = result.receipts.map((r, index) => `
       <tr style="border-bottom:1px solid var(--border-light);">
+        <td style="padding:10px 12px;">${escapeHtml(r.description || '-')}</td>
+        <td style="padding:10px 12px; font-size:13px; color:var(--text-muted);">${r.date || '-'}</td>
+        <td style="padding:10px 12px; text-align:right; font-weight:600;">${r.currency || 'HKD'} ${r.amount || '0'}</td>
         <td style="padding:10px 8px; text-align:center;">
           <button class="btn-icon-edit" onclick="openEditPanel(${index})" title="Edit receipt" style="background:transparent; border:none; cursor:pointer; color:var(--accent); padding:4px; border-radius:4px;">
             <i class="fas fa-pen-to-square"></i>
           </button>
         </td>
-        <td style="padding:10px 12px;">${escapeHtml(r.description || '-')}</td>
-        <td style="padding:10px 12px; font-size:13px; color:var(--text-muted);">${r.date || '-'}</td>
-        <td style="padding:10px 12px; text-align:right; font-weight:600;">${r.currency || 'HKD'} ${r.amount || '0'}</td>
       </tr>
     `).join('');
     

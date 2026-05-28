@@ -20,7 +20,8 @@ const COLUMNS = [
   "Category",     // H: From receipt data
   "Remarks",      // I: From receipt data
   "Image_name",   // J: Uploaded image filename (YYYYMMDD_HHmmSS_originalname)
-  "Image_URL"     // K: Google Drive URL to the image
+  "Image_URL",    // K: Google Drive URL to the image
+  "ID"            // L: UUID v4 for unique identification
 ];
 
 // ============================================================
@@ -129,6 +130,7 @@ function handleSaveReceipts(data) {
   var createdAt = formatHKT(now);
   var modifiedAt = formatHKT(now);
   var savedCount = 0;
+  var savedIds = [];
 
   // Calculate next Record_no
   // Find the max existing Record_no (column A, skip header row 1)
@@ -156,6 +158,8 @@ function handleSaveReceipts(data) {
     var r = receipts[i];
     var recordNo = lastRecordNo + i + 1;
 
+    var receiptId = Utilities.getUuid(); // Generate UUID for this receipt
+
     var row = [
       recordNo,                       // Record_no
       parseDateStringToObject(r.date), // Date as Date object
@@ -167,16 +171,19 @@ function handleSaveReceipts(data) {
       r.category || "Others",        // Category
       r.remarks || "",                // Remarks
       r.imageName || "",             // Image_name (timestamped filename)
-      r.imageUrl || ""              // Image_URL
+      r.imageUrl || "",              // Image_URL
+      receiptId                       // ID (UUID v4)
     ];
 
     sheet.appendRow(row);
+    savedIds.push(receiptId);
     savedCount++;
   }
 
   return jsonResponse(200, {
     success: true,
     saved: savedCount,
+    ids: savedIds,
     sheetUrl: sheet.getParent().getUrl()
   });
 }
@@ -285,7 +292,7 @@ function handleQueryReceipts(data) {
     
     // Second pass: fetch full row data only for matching rows
     if (matchingIndices.length > 0) {
-      // Get all needed columns: A, B, E, F, G, H, I, J, K
+      // Get all needed columns: A-L (all COLUMNS)
       var allDataRange = sheet.getRange(2, 1, rowsCount, COLUMNS.length);
       var allData = allDataRange.getValues();
       
@@ -294,6 +301,8 @@ function handleQueryReceipts(data) {
         var row = allData[idx];
         var recordNo = row[0];
         var dateCell = row[1];
+        var createdAt = row[2];
+        var modifiedAt = row[3];
         var description = row[4];
         var amount = parseFloat(row[5]) || 0;
         var currency = row[6];
@@ -301,10 +310,14 @@ function handleQueryReceipts(data) {
         var remarks = row[8];
         var imageName = row[9];
         var imageUrl = row[10];
+        var id = row[11]; // Column 12 - UUID
         
         receipts.push({
+          id: id,
           recordNo: recordNo,
           date: formatDateForResponse(dateCell),
+          createdAt: createdAt,
+          modifiedAt: modifiedAt,
           description: description,
           amount: amount,
           currency: currency,

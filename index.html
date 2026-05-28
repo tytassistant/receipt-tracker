@@ -1179,7 +1179,10 @@
 // State
 let config = null; // { poeKey, appsScriptUrl, secretToken } - decrypted
 let photos = []; // { id, dataUrl, file }
-let receipts = []; // { id, photoId, vendor, date, amount, currency, category, remarks, imageDataUrl }
+// Unified field naming aligned with Google Sheet:
+// { id (UUID), recordNo, photoId, description (was vendor), date, amount, currency, category, remarks, 
+//   createdAt, modifiedAt, imageName, imageDataUrl, imageUrl }
+let receipts = [];
 let isExtracting = false;
 
 // DOM Elements
@@ -1730,7 +1733,7 @@ function skipAiAndGoToReview() {
       id: 'receipt_' + Date.now() + '_' + i,
       photoId: photo.id,
       originalFilename: photo.file ? photo.file.name : 'receipt.jpg',
-      vendor: '',
+      description: '',
       date: today,
       amount: '',
       currency: 'HKD',
@@ -1786,7 +1789,7 @@ async function extractReceipts() {
           id: 'receipt_' + Date.now() + '_' + i,
           photoId: photo.id,
           originalFilename: photo.file ? photo.file.name : 'receipt.jpg',
-          vendor: '',
+          description: '',
           date: new Date().toISOString().split('T')[0],
           amount: '',
           currency: 'HKD',
@@ -1839,7 +1842,7 @@ async function extractReceiptWithPoe(photo) {
   var messageContent = [
     { type: 'text', text: `Extract receipt data from this image and return ONLY a JSON object with this exact structure:
 {
-  "vendor": "store or merchant name",
+  "vendor": "store or merchant name (will be mapped to description field)",
   "date": "YYYY-MM-DD format if visible, else null",
   "amount": "numeric total amount without currency symbol",
   "currency": "3-letter code (e.g., HKD, USD, EUR) - default HKD if unclear",
@@ -1909,7 +1912,7 @@ Rules:
   }
   
   return {
-    vendor: data.vendor || '',
+    description: data.vendor || '',
     date: data.date || new Date().toISOString().split('T')[0],
     amount: data.amount || '',
     currency: data.currency || 'HKD',
@@ -1948,7 +1951,7 @@ function renderReviewTable() {
         <img src="${r.imageDataUrl}" class="receipt-card-thumb" onclick="openLightbox('${r.imageDataUrl}')">
         <div class="receipt-card-field-full">
           <label>Description</label>
-          <input type="text" value="${escapeHtml(r.vendor)}" onchange="updateReceipt('${r.id}', 'vendor', this.value)" placeholder="Description">
+          <input type="text" value="${escapeHtml(r.description)}" onchange="updateReceipt('${r.id}', 'description', this.value)" placeholder="Description">
         </div>
       </div>
       <div class="receipt-card-row">
@@ -2008,7 +2011,7 @@ function addManualReceipt() {
   receipts.push({
     id: 'receipt_manual_' + Date.now(),
     photoId: null,
-    vendor: '',
+    description: '',
     date: new Date().toISOString().split('T')[0],
     amount: '',
     currency: 'HKD',
@@ -2033,7 +2036,7 @@ async function saveReceipts() {
   if (!config || receipts.length === 0) return;
   
   // Validate
-  const invalid = receipts.filter(r => !r.vendor || !r.amount);
+  const invalid = receipts.filter(r => !r.description || !r.amount);
   if (invalid.length > 0) {
     showToast('Please fill in description and amount for all receipts', 'error');
     return;
@@ -2071,7 +2074,7 @@ async function saveReceipts() {
       // Write to Sheet
       await writeToSheet({
         date: r.date || today,
-        description: r.vendor, // field is 'description' in Apps Script
+        description: r.description, // aligned field name
         amount: r.amount,
         currency: r.currency,
         category: r.category,
@@ -2108,7 +2111,7 @@ async function saveReceipts() {
   if (failCount === 0 && receipts.length > 0) {
     summaryTableBody.innerHTML = receipts.map(r => `
       <tr style="border-bottom:1px solid var(--border-light);">
-        <td style="padding:8px 12px;">${escapeHtml(r.vendor || r.description || '-')}</td>
+        <td style="padding:8px 12px;">${escapeHtml(r.description || '-')}</td>
         <td style="padding:8px 12px;">${r.date || '-'}</td>
         <td style="padding:8px 12px; text-align:right; font-weight:600;">${r.currency || 'HKD'} ${r.amount || '0'}</td>
       </tr>

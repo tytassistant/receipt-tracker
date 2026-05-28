@@ -619,22 +619,52 @@
       border-color: var(--accent);
       box-shadow: 0 0 0 2px var(--accent-light);
     }
-    .receipt-card-actions {
-      position: absolute;
-      top: 12px;
-      right: 12px;
+    /* Remarks row with inline delete button */
+    .receipt-card-remarks-row {
+      display: flex;
+      gap: 12px;
+      align-items: flex-end;
     }
-    .receipt-card-actions .btn-icon-delete {
+    .receipt-card-remarks-row .receipt-card-field-full {
+      flex: 1;
+      min-width: 0;
+    }
+    .receipt-card-remarks-row .btn-icon-delete {
       background: transparent;
       border: none;
       color: var(--danger);
       cursor: pointer;
-      padding: 8px;
+      padding: 8px 12px;
       font-size: 16px;
       transition: var(--transition);
+      height: 42px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
-    .receipt-card-actions .btn-icon-delete:hover {
+    .receipt-card-remarks-row .btn-icon-delete:hover {
       color: var(--danger-hover);
+      background: var(--danger-light);
+      border-radius: var(--radius-sm);
+    }
+    /* Textarea for remarks */
+    .receipt-card-field textarea {
+      width: 100%;
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-family: inherit;
+      font-size: 14px;
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+      resize: vertical;
+      min-height: 72px;
+      line-height: 1.4;
+    }
+    .receipt-card-field textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px var(--accent-light);
     }
     .photo-thumb {
       width: 60px; height: 60px; object-fit: cover;
@@ -1946,12 +1976,12 @@ function renderReviewTable() {
           <input type="number" step="0.01" value="${r.amount}" onchange="updateReceipt('${r.id}', 'amount', this.value)" placeholder="0.00">
         </div>
       </div>
-      <div class="receipt-card-field-full">
-        <label>Remarks</label>
-        <input type="text" value="${escapeHtml(r.remarks || '')}" onchange="updateReceipt('${r.id}', 'remarks', this.value)" placeholder="Notes...">
-      </div>
-      <div class="receipt-card-actions">
-        <button class="btn-icon-delete" onclick="deleteReceipt('${r.id}')" title="Delete receipt"><i class="fas fa-trash"></i></button>
+      <div class="receipt-card-remarks-row">
+        <div class="receipt-card-field-full">
+          <label>Remarks</label>
+          <textarea rows="3" onchange="updateReceipt('${r.id}', 'remarks', this.value)" placeholder="Notes...">${escapeHtml(r.remarks || '')}</textarea>
+        </div>
+        <button class="btn-icon-delete" onclick="deleteReceiptWithConfirm('${r.id}')" title="Delete receipt"><i class="fas fa-trash"></i></button>
       </div>
     </div>
   `).join('');
@@ -1964,9 +1994,11 @@ function updateReceipt(id, field, value) {
   }
 }
 
-function deleteReceipt(id) {
-  receipts = receipts.filter(r => r.id !== id);
-  renderReviewTable();
+function deleteReceiptWithConfirm(id) {
+  if (confirm('Delete this receipt?')) {
+    receipts = receipts.filter(r => r.id !== id);
+    renderReviewTable();
+  }
 }
 
 function addManualReceipt() {

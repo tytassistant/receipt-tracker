@@ -1599,6 +1599,23 @@ async function loadSummaryData() {
   }
 }
 
+async function callApi(action, data) {
+  const response = await fetch(config.appsScriptUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify({
+      token: config.secretToken,
+      action: action,
+      data: data
+    })
+  });
+  const result = await response.text().then(text => {
+    try { return JSON.parse(text); }
+    catch { return { success: false, error: 'Invalid JSON response' }; }
+  });
+  return result;
+}
+
 async function queryReceipts(startDate, endDate) {
   const response = await fetch(config.appsScriptUrl, {
     method: 'POST',
@@ -1699,9 +1716,14 @@ function deleteCurrentReceipt() {
   const receipt = window.summaryReceipts[currentEditIndex];
   
   if (confirm(`Delete this receipt: ${receipt.description || 'Unnamed'} (${receipt.date || 'no date'})?`)) {
-    // TODO: Call delete API in Step 3
-    showToast('Delete feature coming in Step 3', 'info');
-    showWelcomePanel();
+    callApi('deleteReceipt', { id: receipt.id }).then(result => {
+      if (result.success) {
+        showToast('Receipt deleted', 'success');
+        showWelcomePanel();
+      } else {
+        showToast('Delete failed: ' + (result.error || 'Unknown error'), 'error');
+      }
+    }).catch(e => showToast('Delete error: ' + e.message, 'error'));
   }
 }
 
@@ -1727,12 +1749,19 @@ async function saveEditChanges() {
     return;
   }
   
-  // TODO: Call update API in Step 3
-  showToast('Update feature coming in Step 3', 'info');
-  
-  // Update local data for now
-  Object.assign(receipt, updates);
-  showWelcomePanel();
+  try {
+    const result = await callApi('updateReceipt', updates);
+    if (result.success) {
+      showToast('Receipt updated', 'success');
+      // Update local data
+      Object.assign(receipt, updates, { modifiedAt: result.modifiedAt });
+      showWelcomePanel();
+    } else {
+      showToast('Update failed: ' + (result.error || 'Unknown error'), 'error');
+    }
+  } catch (e) {
+    showToast('Update error: ' + e.message, 'error');
+  }
 }
 
 // ==========================================

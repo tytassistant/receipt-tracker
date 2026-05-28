@@ -52,6 +52,10 @@ function doPost(e) {
       return handleGetFolder(data);
     } else if (action === "queryReceipts") {
       return handleQueryReceipts(data);
+    } else if (action === "updateReceipt") {
+      return handleUpdateReceipt(data);
+    } else if (action === "deleteReceipt") {
+      return handleDeleteReceipt(data);
     } else {
       return jsonResponse(400, { error: "Unknown action: " + action });
     }
@@ -514,6 +518,112 @@ function detectMimeType(filename, base64) {
   if (base64.charAt(0) === "U" && base64.charAt(1) === "s") return "image/webp";
 
   return "application/octet-stream";
+}
+
+// ============================================================
+// Action: updateReceipt
+// Updates an existing receipt by ID
+// data: { id, description, date, amount, currency, category, remarks }
+// ============================================================
+function handleUpdateReceipt(data) {
+  var id = data.id;
+  if (!id) {
+    return jsonResponse(400, { error: "id is required" });
+  }
+
+  var sheet = getOrCreateSheet();
+  var lastRow = sheet.getLastRow();
+  if (lastRow < 2) {
+    return jsonResponse(404, { error: "No receipts found" });
+  }
+
+  // Find the row with matching ID in column 12
+  var idColumn = 12; // Column L
+  var idRange = sheet.getRange(2, idColumn, lastRow - 1, 1);
+  var idValues = idRange.getValues();
+
+  var rowIndex = -1;
+  for (var i = 0; i < idValues.length; i++) {
+    if (idValues[i][0] === id) {
+      rowIndex = i + 2; // +2 because: +1 for header row, +1 for 1-based index
+      break;
+    }
+  }
+
+  if (rowIndex === -1) {
+    return jsonResponse(404, { error: "Receipt not found: " + id });
+  }
+
+  // Parse date
+  function parseDateStringToObject(dateStr) {
+    if (!dateStr) return new Date();
+    if (dateStr instanceof Date) return dateStr;
+    var parts = dateStr.split("-");
+    return new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+  }
+
+  // Build updated row: [Date, Modified_at, Description, Amount, Currency, Category, Remarks]
+  // Columns: B(Date), D(Modified_at), E(Description), F(Amount), G(Currency), H(Category), I(Remarks)
+  var modifiedAt = formatHKT(new Date());
+  var updatedRow = [
+    [parseDateStringToObject(data.date), modifiedAt, data.description || "",
+     parseFloat(data.amount) || 0, data.currency || "HKD",
+     data.category || "Other", data.remarks || ""]
+  ];
+
+  // Write to columns B, D, E, F, G, H, I (columns 2, 4, 5, 6, 7, 8, 9)
+  sheet.getRange(rowIndex, 2, 1, 7).setValues(updatedRow);
+
+  return jsonResponse(200, {
+    success: true,
+    updated: 1,
+    id: id,
+    modifiedAt: modifiedAt
+  });
+}
+
+// ============================================================
+// Action: deleteReceipt
+// Deletes a receipt row by ID
+// data: { id }
+// ============================================================
+function handleDeleteReceipt(data) {
+  var id = data.id;
+  if (!id) {
+    return jsonResponse(400, { error: "id is required" });
+  }
+
+  var sheet = getOrCreateSheet();
+  var lastRow = sheet.getLastRow();
+  if (lastRow < 2) {
+    return jsonResponse(404, { error: "No receipts found" });
+  }
+
+  // Find the row with matching ID in column 12
+  var idColumn = 12; // Column L
+  var idRange = sheet.getRange(2, idColumn, lastRow - 1, 1);
+  var idValues = idRange.getValues();
+
+  var rowIndex = -1;
+  for (var i = 0; i < idValues.length; i++) {
+    if (idValues[i][0] === id) {
+      rowIndex = i + 2; // +2: header row + 1-based index
+      break;
+    }
+  }
+
+  if (rowIndex === -1) {
+    return jsonResponse(404, { error: "Receipt not found: " + id });
+  }
+
+  // Delete the entire row
+  sheet.deleteRows(rowIndex, 1);
+
+  return jsonResponse(200, {
+    success: true,
+    deleted: 1,
+    id: id
+  });
 }
 
 // ============================================================

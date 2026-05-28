@@ -1665,7 +1665,7 @@ function renderEditCard(receipt) {
   container.innerHTML = `
     <div class="receipt-card">
       <div class="receipt-card-header">
-        ${imgSrc ? `<img src="${imgSrc}" class="receipt-card-thumb" onclick="openLightbox('${receipt.imageUrl}')" onerror="this.outerHTML='<div class="receipt-card-thumb" style="background:var(--bg-secondary); display:flex; align-items:center; justify-content:center; color:var(--text-muted);"><i class="fas fa-receipt"></i></div>'>` : '<div class="receipt-card-thumb" style="background:var(--bg-secondary); display:flex; align-items:center; justify-content:center; color:var(--text-muted);"><i class="fas fa-receipt"></i></div>'}
+${imgSrc ? `<img src="${imgSrc}" class="receipt-card-thumb" onclick="openLightbox('${receipt.imageUrl}')">` : '<div class="receipt-card-thumb" style="background:var(--bg-secondary); display:flex; align-items:center; justify-content:center; color:var(--text-muted);"><i class="fas fa-receipt"></i></div>'}
         <div class="receipt-card-field-full">
           <label>Description</label>
           <input type="text" id="editDescription" value="${escapeHtml(receipt.description || '')}" placeholder="Description">

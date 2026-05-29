@@ -84,25 +84,19 @@ function verifyToken(token) {
 
 // ============================================================
 // Action: getImageBase64
-// Fetches a Google Drive thumbnail URL and returns as base64 data URL
-// Used by reviewWithAI to get images without CORS issues
-// data: { imageUrl: string }
+// Fetches a Google Drive image file and returns as base64 data URL
+// Uses DriveApp (no CORS, runs as authenticated user)
+// data: { fileId: string }
 // ============================================================
 function handleGetImageBase64(data) {
-  var imageUrl = data.imageUrl;
-  if (!imageUrl) {
-    return jsonResponse(400, { error: "imageUrl is required" });
+  var fileId = data.fileId;
+  if (!fileId) {
+    return jsonResponse(400, { error: "fileId is required" });
   }
   
   try {
-    var response = UrlFetchApp.fetch(imageUrl, {
-      muteHttpExceptions: true
-    });
-    var status = response.getResponseCode();
-    if (status !== 200) {
-      return jsonResponse(400, { error: "Failed to fetch image, HTTP " + status });
-    }
-    var blob = response.getBlob();
+    var file = DriveApp.getFileById(fileId);
+    var blob = file.getBlob();
     var contentType = blob.getContentType();
     var base64 = Utilities.base64Encode(blob.getBytes());
     var dataUrl = "data:" + contentType + ";base64," + base64;

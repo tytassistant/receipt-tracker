@@ -1891,13 +1891,17 @@ async function confirmReviewChanges() {
 // Helper: convert Google Drive thumbnail URL to base64 via Apps Script (no CORS)
 async function imageUrlToDataUrl(imageUrl) {
   try {
+    // Extract file ID from Google Drive URL
+    const fileId = imageUrl?.match(/file\/d\/([^/?]+)/)?.[1];
+    if (!fileId) return null;
+    
     const response = await fetch(config.appsScriptUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify({
         token: config.secretToken,
         action: 'getImageBase64',
-        data: { imageUrl }
+        data: { fileId }
       })
     });
     const result = await response.json();

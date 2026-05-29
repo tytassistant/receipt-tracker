@@ -22,7 +22,9 @@ const COLUMNS = [
   "Remarks",      // I: From receipt data
   "Image_name",   // J: Uploaded image filename (YYYYMMDD_HHmmSS_originalname)
   "Image_URL",    // K: Google Drive URL to the image
-  "ID"            // L: UUID v4 for unique identification
+  "ID",            // L: UUID v4 for unique identification
+  "Reviewed",     // M: 0 or 1
+  "Reviewed_at"   // N: HKT timestamp when first marked reviewed
 ];
 
 // ============================================================
@@ -57,6 +59,10 @@ function doPost(e) {
       return handleUpdateReceipt(data);
     } else if (action === "deleteReceipt") {
       return handleDeleteReceipt(data);
+    } else if (action === "queryReviewed") {
+      return handleQueryReviewed(data);
+    } else if (action === "saveReviewed") {
+      return handleSaveReviewed(data);
     } else {
       return jsonResponse(400, { error: "Unknown action: " + action });
     }
@@ -642,6 +648,166 @@ function handleDeleteReceipt(data) {
     deleted: 1,
     id: id
   });
+}
+
+// ============================================================
+// Action: queryReviewed
+// Returns only unreviewed receipts in date range (Reviewed_at == "")
+// ============================================================
+function handleQueryReviewed(data) {
+  var startDate = data.startDate;
+  var endDate = data.endDate;
+  if (!startDate || !endDate) {
+    return jsonResponse(400, { error: "startDate and endDate are required" });
+  }
+
+  var sheet = getOrCreateSheet();
+  var lastRow = sheet.getLastRow();
+  if (lastRow < 2) {
+    return jsonResponse(200, { success: true, receipts: [], count: 0 });
+  }
+
+  var startDateObj = parseDateInput(startDate);
+  var endDateObj = parseDateInput(endDate);
+  endDateObj.setHours(23, 59, 59, 999);
+
+  var rowsCount = lastRow - 1;
+  var allData = sheet.getRange(2, 1, rowsCount, COLUMNS.length).getValues();
+  var receipts = [];
+
+  for (var i = 0; i < allData.length; i++) {
+    var row = allData[i];
+    var dateCell = row[1]; // Column B: Date
+    var reviewedAt = row[13]; // Column N: Reviewed_at
+
+    // Only include if: date matches AND Reviewed_at is empty (not yet reviewed)
+    if (dateCell instanceof Date &&
+        dateCell.getTime() >= startDateObj.getTime() &&
+        dateCell.getTime() <= endDateObj.getTime() &&
+        (!reviewedAt || reviewedAt === "")) {
+
+      receipts.push({
+        id: row[11],
+        recordNo: row[0],
+        date: formatDateForResponse(dateCell),
+        createdAt: row[2],
+        modifiedAt: row[3],
+        description: row[4],
+        amount: parseFloat(row[5]) || 0,
+        currency: row[6],
+        category: row[7],
+        remarks: row[8],
+        imageName: row[9],
+        imageUrl: row[10],
+        reviewed: parseInt(row[12]) || 0, // Column M
+        reviewedAt: row[13] || ""
+      });
+    }
+  }
+
+  return jsonResponse(200, { success: true, receipts: receipts, count: receipts.length });
+}
+
+// ============================================================
+// Action: saveReviewed
+// Updates one or more reviewed receipts
+// data: { receipts: [{ id, description, date, amount, currency, category, remarks, reviewed }] }
+// ============================================================
+function handleSaveReviewed(data) {
+  var receiptList = data.receipts;
+  if (!receiptList || !Array.isArray(receiptList) || receiptList.length === 0) {
+    return jsonResponse(400, { error: "receipts array is required" });
+  }
+
+  var sheet = getOrCreateSheet();
+  var lastRow = sheet.getLastRow();
+  if (lastRow < 2) {
+    return jsonResponse(404, { error: "No receipts found" });
+  }
+
+  // Read all IDs and Reviewed columns at once for fast lookup
+  var idRange = sheet.getRange(2, 12, lastRow - 1, 1).getValues(); // Column L: ID
+  var reviewedRange = sheet.getRange(2, 13, lastRow - 1, 1).getValues(); // Column M: Reviewed
+  var saved = 0;
+  var errors = [];
+  var now = new Date();
+  var modifiedAt = formatHKT(now);
+  var hktDate = now; // for parseDateStringToObject
+
+  function parseDateString(dateStr) {
+    if (!dateStr) return null;
+    if (dateStr instanceof Date) return dateStr;
+    var parts = String(dateStr).split("-");
+    if (parts.length < 3) return null;
+    return new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+  }
+
+  for (var r = 0; r < receiptList.length; r++) {
+    var rData = receiptList[r];
+    var rowIndex = -1;
+
+    // Find row by ID
+    for (var i = 0; i < idRange.length; i++) {
+      if (idRange[i][0] === rData.id) {
+        rowIndex = i + 2;
+        break;
+      }
+    }
+
+    if (rowIndex === -1) {
+      errors.push("ID not found: " + rData.id);
+      continue;
+    }
+
+    // Determine Reviewed_at value
+    // Only set Reviewed_at when reviewed==1 AND Reviewed was previously 0 (first review)
+    var currentReviewed = parseInt(reviewedRange[rowIndex - 2][0]) || 0;
+    var newReviewed = parseInt(rData.reviewed) || 0;
+    var reviewedAtValue = "";
+
+    if (newReviewed === 1) {
+      if (currentReviewed === 0) {
+        // First time marking as reviewed — set timestamp
+        reviewedAtValue = formatHKT(now);
+      } else {
+        // Already reviewed before — keep existing timestamp
+        var existingCell = sheet.getRange(rowIndex, 14).getValue();
+        reviewedAtValue = existingCell || "";
+      }
+    }
+    // If newReviewed == 0, Reviewed_at stays empty
+
+    // Build row update: B=date, C=modifiedAt, E=description, F=amount, G=currency, H=category, I=remarks, M=reviewed, N=reviewedAt
+    var updatedRow = [
+      [parseDateString(rData.date) || sheet.getRange(rowIndex, 2).getValue(),
+       modifiedAt,
+       rData.description || "",
+       parseFloat(rData.amount) || 0,
+       rData.currency || "HKD",
+       rData.category || "Other",
+       rData.remarks || "",
+       newReviewed,
+       reviewedAtValue]
+    ];
+
+    // Write to columns B, D, E, F, G, H, I, M, N
+    sheet.getRange(rowIndex, 2, 1, 1).setValue(updatedRow[0][0]);               // B: Date
+    sheet.getRange(rowIndex, 4, 1, 1).setValue(modifiedAt);                      // D: Modified_at
+    sheet.getRange(rowIndex, 5, 1, 1).setValue(updatedRow[0][2]);               // E: Description
+    sheet.getRange(rowIndex, 6, 1, 1).setValue(updatedRow[0][3]);               // F: Amount
+    sheet.getRange(rowIndex, 7, 1, 1).setValue(updatedRow[0][4]);               // G: Currency
+    sheet.getRange(rowIndex, 8, 1, 1).setValue(updatedRow[0][5]);               // H: Category
+    sheet.getRange(rowIndex, 9, 1, 1).setValue(updatedRow[0][6]);               // I: Remarks
+    sheet.getRange(rowIndex, 13, 1, 1).setValue(newReviewed);                   // M: Reviewed
+    sheet.getRange(rowIndex, 14, 1, 1).setValue(reviewedAtValue);               // N: Reviewed_at
+
+    saved++;
+  }
+
+  if (errors.length > 0) {
+    return jsonResponse(200, { success: true, saved: saved, errors: errors });
+  }
+  return jsonResponse(200, { success: true, saved: saved });
 }
 
 // ============================================================

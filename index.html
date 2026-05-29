@@ -1210,7 +1210,15 @@
         </div>
       </div>
 
-      <button class="btn btn-accent btn-block" id="reviewWithAiBtn" style="margin-top:16px;">
+      <div style="display:flex; align-items:center; gap:8px; margin-top:16px; justify-content:center;">
+        <label for="reviewModelSelector" style="font-size:13px; color:var(--text-muted); margin:0;">Model:</label>
+        <select id="reviewModelSelector" style="background:var(--bg-secondary); border:1px solid var(--border); border-radius:var(--radius-sm); padding:4px 8px; font-size:13px; cursor:pointer;">
+          <option value="kimi-k2.5-fw">kimi-k2.5-fw</option>
+          <option value="gemma-4-31b">gemma-4-31b</option>
+        </select>
+      </div>
+
+      <button class="btn btn-accent btn-block" id="reviewWithAiBtn" style="margin-top:12px;">
         <i class="fas fa-robot"></i> Review with AI
       </button>
 
@@ -1898,7 +1906,7 @@ async function reviewWithAI() {
     return;
   }
   
-  const model = document.getElementById('modelSelector')?.value || 'kimi-k2.5-fw';
+  const model = document.getElementById('reviewModelSelector')?.value || 'kimi-k2.5-fw';
   
   for (let i = 0; i < reviewRecords.length; i++) {
     const r = reviewRecords[i];

@@ -1996,7 +1996,8 @@ async function reviewWithAI() {
       if (amountMatch && amountMatch[1] !== 'null') {
         const extractedTotal = parseFloat(amountMatch[1]);
         const recordAmount = parseFloat(r.amount) || 0;
-        if (Math.abs(extractedTotal - recordAmount) < 0.02) {
+        const tolerance = parseFloat(document.getElementById('reviewToleranceInput')?.value) || 0.50;
+        if (Math.abs(extractedTotal - recordAmount) < tolerance) {
           const checkbox = document.getElementById('review-check-' + i);
           if (checkbox) checkbox.checked = true;
           verified++;

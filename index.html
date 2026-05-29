@@ -1544,6 +1544,7 @@ function showWelcomePanel() {
   
   // Update AI section visibility based on whether Poe key is configured
   updateAiSectionVisibility();
+  updateExtractButtonLabel();
   
   // Load summary data
   loadSummaryData();
@@ -1554,6 +1555,11 @@ function formatDateForInput(date) {
   const m = String(date.getMonth() + 1).padStart(2, '0');
   const d = String(date.getDate()).padStart(2, '0');
   return `${y}-${m}-${d}`;
+}
+
+// Returns YYYY-MM-DD in Hong Kong timezone (UTC+8)
+function hkDateStr(date) {
+  return date.toLocaleDateString('en-CA', { timeZone: 'Asia/Hong_Kong' });
 }
 
 async function loadSummaryData() {
@@ -1933,7 +1939,7 @@ function handleExtractOrEnterDetails() {
 function skipAiAndGoToReview() {
   if (photos.length === 0 || !config) return;
   
-  const today = new Date().toISOString().split('T')[0];
+  const today = hkDateStr(new Date());
   receipts = [];
   
   for (let i = 0; i < photos.length; i++) {
@@ -1999,7 +2005,7 @@ async function extractReceipts() {
           photoId: photo.id,
           originalFilename: photo.file ? photo.file.name : 'receipt.jpg',
           description: '',
-          date: new Date().toISOString().split('T')[0],
+          date: hkDateStr(new Date()),
           amount: '',
           currency: 'HKD',
           category: 'Uncategorized',
@@ -2122,7 +2128,7 @@ Rules:
   
   return {
     description: data.vendor || '',
-    date: data.date || new Date().toISOString().split('T')[0],
+    date: data.date || hkDateStr(new Date()),
     amount: data.amount || '',
     currency: data.currency || 'HKD',
     category: data.category || 'Other',
@@ -2221,7 +2227,7 @@ function addManualReceipt() {
     id: 'receipt_manual_' + Date.now(),
     photoId: null,
     description: '',
-    date: new Date().toISOString().split('T')[0],
+    date: hkDateStr(new Date()),
     amount: '',
     currency: 'HKD',
     category: 'Other',
@@ -2256,7 +2262,7 @@ async function saveReceipts() {
   document.getElementById('saveDoneCard').style.display = 'none';
   document.getElementById('saveErrorDetail').style.display = 'none';
   
-  const today = new Date().toISOString().split('T')[0].replace(/-/g, '');
+  const today = hkDateStr(new Date()).replace(/-/g, '');
   let successCount = 0;
   let failCount = 0;
   const errors = [];

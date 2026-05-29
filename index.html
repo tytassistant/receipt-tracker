@@ -1888,27 +1888,22 @@ async function confirmReviewChanges() {
 }
 
 
-// Helper: convert Google Drive thumbnail URL to base64 via Apps Script (no CORS)
+// Helper: convert thumbnail URL to base64 via canvas (browser cache, no CORS needed)
 async function imageUrlToDataUrl(imageUrl) {
-  try {
-    // Extract file ID from Google Drive URL
-    const fileId = imageUrl?.match(/file\/d\/([^/?]+)/)?.[1];
-    if (!fileId) return null;
-    
-    const response = await fetch(config.appsScriptUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({
-        token: config.secretToken,
-        action: 'getImageBase64',
-        data: { fileId }
-      })
-    });
-    const result = await response.json();
-    return result.success ? result.dataUrl : null;
-  } catch (e) {
-    return null;
-  }
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.naturalWidth;
+      canvas.height = img.naturalHeight;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0);
+      resolve(canvas.toDataURL('image/jpeg', 0.8));
+    };
+    img.onerror = () => resolve(null);
+    img.src = imageUrl;
+  });
 }
 
 async function reviewWithAI() {

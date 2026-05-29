@@ -1942,7 +1942,7 @@ async function reviewWithAI() {
     const fileId = r.imageUrl?.match(/file\/d\/([^/?]+)/)?.[1];
     if (!fileId) { errors++; continue; }
     
-    const thumbUrl = `https://drive.google.com/thumbnail?id=${fileId}&sz=w800`;
+    const thumbUrl = `https://drive.google.com/uc?export=view&id=${fileId}`;
     progressText.textContent = `Verifying record ${i + 1} of ${reviewRecords.length}...`;
     
     // Convert to base64 data URL for CORS

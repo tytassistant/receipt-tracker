@@ -1894,12 +1894,12 @@ async function imageUrlToDataUrl(imageUrl) {
   if (!fileIdMatch) return null;
   const fileId = fileIdMatch[1];
   try {
-    const cfg = await loadConfig();
-    const response = await fetch(cfg.appsScriptUrl, {
+    if (!config) throw new Error('Not authenticated');
+    const response = await fetch(config.appsScriptUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify({
-        token: cfg.secretToken,
+        token: config.secretToken,
         action: 'getImageBase64',
         data: { fileId: fileId }
       })
@@ -1939,11 +1939,11 @@ async function reviewWithAI() {
     const fileId = r.imageUrl?.match(/file\/d\/([^/?]+)/)?.[1];
     if (!fileId) { errors++; continue; }
     
-    const thumbUrl = `https://drive.google.com/uc?export=view&id=${fileId}`;
+    // [Removed by Optus 4.7] const thumbUrl = `https://drive.google.com/uc?export=view&id=${fileId}`;
     progressText.textContent = `Verifying record ${i + 1} of ${reviewRecords.length}...`;
     
     // Convert to base64 data URL for CORS
-    const imageDataUrl = await imageUrlToDataUrl(thumbUrl);
+    const imageDataUrl = await imageUrlToDataUrl(r.imageUrl);
     if (!imageDataUrl) {
       console.error('Could not fetch image: ' + r.imageUrl);
       errors++;

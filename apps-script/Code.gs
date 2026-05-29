@@ -89,29 +89,73 @@ function verifyToken(token) {
 // ============================================================
 function handleGetImageBase64(data) {
   var fileId = data.fileId;
-  if (!fileId) {
-    return jsonResponse(400, { error: "fileId is required" });
+
+  // Accept either a fileId or a full Drive URL (extract the ID)
+  if (!fileId && data.imageUrl) {
+    fileId = extractDriveFileId(data.imageUrl);
   }
-  
+
+  if (!fileId) {
+    return jsonResponse(400, { error: "fileId or imageUrl is required" });
+  }
+
   try {
-    // Use Google's direct export URL (no CORS, no Drive API needed)
-    var exportUrl = 'https://drive.google.com/uc?export=view\u0026id=' + fileId;
-    var response = UrlFetchApp.fetch(exportUrl, {
-      muteHttpExceptions: true,
-      followRedirects: true
-    });
-    var status = response.getResponseCode();
-    if (status !== 200) {
-      return jsonResponse(400, { error: "Failed to fetch image, HTTP " + status });
+    var file = DriveApp.getFileById(fileId);
+    var blob = file.getBlob();
+    var contentType = blob.getContentType() || "image/jpeg";
+
+    // Reject non-image MIME types early
+    if (contentType.indexOf("image/") !== 0 && contentType !== "application/pdf") {
+      return jsonResponse(400, { error: "File is not an image: " + contentType });
     }
+
+    var bytes = blob.getBytes();
+    var base64 = Utilities.base64Encode(bytes);
+    var dataUrl = "data:" + contentType + ";base64," + base64;
+
+    return jsonResponse(200, {
+      success: true,
+      fileId: fileId,
+      mimeType: contentType,
+      sizeBytes: bytes.length,
+      dataUrl: dataUrl
+    });
+  } catch (err) {
+    return jsonResponse(500, { error: "Failed to read Drive file " + fileId + ": " + err.message });
+  }
+}
+
+// Helper: extract Drive file ID from various URL formats
+function extractDriveFileId(url) {
+  if (!url) return null;
+  var patterns = [
+    /\/file\/d\/([a-zA-Z0-9_-]+)/,
+    /\/d\/([a-zA-Z0-9_-]+)/,
+    /[?&]id=([a-zA-Z0-9_-]+)/
+  ];
+  for (var i = 0; i < patterns.length; i++) {
+    var m = url.match(patterns[i]);
+    if (m && m[1]) return m[1];
+  }
+  return null;
+}
+
+// ============================================================
+// LEGACY — UrlFetchApp approach, kept for reference only
+// ============================================================
+function handleGetImageBase64_OLD(data) {
+  var fileId = data.fileId;
+  if (!fileId) { return jsonResponse(400, { error: "fileId is required" }); }
+  try {
+    var exportUrl = 'https://drive.google.com/uc?export=view\u0026id=' + fileId;
+    var response = UrlFetchApp.fetch(exportUrl, { muteHttpExceptions: true, followRedirects: true });
+    var status = response.getResponseCode();
+    if (status !== 200) { return jsonResponse(400, { error: "Failed to fetch image, HTTP " + status }); }
     var blob = response.getBlob();
     var contentType = blob.getContentType() || 'image/jpeg';
     var base64 = Utilities.base64Encode(blob.getBytes());
     var dataUrl = "data:" + contentType + ";base64," + base64;
-    return jsonResponse(200, {
-      success: true,
-      dataUrl: dataUrl
-    });
+    return jsonResponse(200, { success: true, dataUrl: dataUrl });
   } catch (err) {
     return jsonResponse(500, { error: err.message });
   }

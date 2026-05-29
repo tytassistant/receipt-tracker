@@ -1890,21 +1890,24 @@ async function confirmReviewChanges() {
 
 // Helper: convert thumbnail URL to base64 via canvas (browser cache, no CORS needed)
 async function imageUrlToDataUrl(imageUrl) {
-  const fileId = imageUrl?.match(/file\/d\/([^/?]+)/)?.[1];
-  if (!fileId) return null;
-  const downloadUrl = `https://drive.google.com/uc?export=download\u0026id=${fileId}`;
+  const fileIdMatch = imageUrl?.match(/\/file\/d\/([^/?]+)/);
+  if (!fileIdMatch) return null;
+  const fileId = fileIdMatch[1];
   try {
-    const response = await fetch(downloadUrl);
-    if (!response.ok) throw new Error('HTTP ' + response.status);
-    const blob = await response.blob();
-    return new Promise((resolve) => {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result);
-      reader.onerror = () => resolve(null);
-      reader.readAsDataURL(blob);
+    const cfg = await loadConfig();
+    const response = await fetch(cfg.appsScriptUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({
+        token: cfg.secretToken,
+        action: 'getImageBase64',
+        data: { fileId: fileId }
+      })
     });
+    const result = await response.json();
+    return result.success ? result.dataUrl : null;
   } catch (e) {
-    console.error('Image download failed:', e);
+    console.error('Image fetch via Apps Script failed:', e);
     return null;
   }
 }

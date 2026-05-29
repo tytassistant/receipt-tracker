@@ -85,7 +85,6 @@ function verifyToken(token) {
 // ============================================================
 // Action: getImageBase64
 // Fetches a Google Drive image file and returns as base64 data URL
-// Uses DriveApp (no CORS, runs as authenticated user)
 // data: { fileId: string }
 // ============================================================
 function handleGetImageBase64(data) {
@@ -95,9 +94,18 @@ function handleGetImageBase64(data) {
   }
   
   try {
-    var file = DriveApp.getFileById(fileId);
-    var blob = file.getBlob();
-    var contentType = blob.getContentType();
+    // Use Google's direct export URL (no CORS, no Drive API needed)
+    var exportUrl = 'https://drive.google.com/uc?export=view\u0026id=' + fileId;
+    var response = UrlFetchApp.fetch(exportUrl, {
+      muteHttpExceptions: true,
+      followRedirects: true
+    });
+    var status = response.getResponseCode();
+    if (status !== 200) {
+      return jsonResponse(400, { error: "Failed to fetch image, HTTP " + status });
+    }
+    var blob = response.getBlob();
+    var contentType = blob.getContentType() || 'image/jpeg';
     var base64 = Utilities.base64Encode(blob.getBytes());
     var dataUrl = "data:" + contentType + ";base64," + base64;
     return jsonResponse(200, {

@@ -1359,8 +1359,8 @@
     </div>
     <div class="ai-error-dialog-body" id="aiReviewErrorBody"></div>
     <div class="ai-error-dialog-footer">
-      <button class="ai-error-btn primary" id="aiCopyLogBtn" onclick="copyAiReviewLog()">Copy</button>
-      <button class="ai-error-btn secondary" onclick="closeAiReviewErrorDialog()">Okay</button>
+      <button class="ai-error-btn secondary" id="aiCopyLogBtn" onclick="copyAiReviewLog()">Copy</button>
+      <button class="ai-error-btn primary" onclick="closeAiReviewErrorDialog()">Okay</button>
     </div>
   </div>
 </div>
@@ -2037,13 +2037,15 @@ function renderReviewCards(receipts) {
           </div>
         </div>
       </div>
-      <div style="text-align:center; padding-top:12px; border-top:1px solid var(--border); margin-top:8px;">
-        <label style="display:flex; align-items:center; justify-content:center; gap:6px; cursor:pointer; font-size:13px; color:var(--text-muted); user-select:none;" class="select-for-ai-review">
+      <div style="text-align:center; padding-top:12px; border-top:1px solid var(--border); margin-top:8px; display:flex; gap:8px; justify-content:center; align-items:center;">
+        <span style="color:var(--text-muted); font-size:13px;">|</span>
+        <label style="display:flex; align-items:center; gap:6px; cursor:pointer; font-size:13px; color:var(--text-muted); user-select:none;">
           <input type="checkbox" class="ai-review-select-cb">
           Select for AI Review
         </label>
       </div>
     `
+
   }).join('');
 }
 

@@ -2110,7 +2110,7 @@ async function reviewWithAI() {
   }
   
   // Check for selected records
-  const checkedEl = document.querySelectorAll('.ai-review-select-cb input[type="checkbox"]:checked');
+  const checkedEl = document.querySelectorAll('[type="checkbox"].ai-review-select-cb:checked');
   if (checkedEl.length === 0) {
     showToast('Please select at least one record for AI review.', 'error');
     return;
@@ -2118,7 +2118,7 @@ async function reviewWithAI() {
   
   // Filter to only selected records, preserving DOM index for checkbox mapping
   const selectedIndices = [];
-  document.querySelectorAll('.ai-review-select-cb input[type="checkbox"]').forEach((cb, idx) => {
+  document.querySelectorAll('[type="checkbox"].ai-review-select-cb').forEach((cb, idx) => {
     if (cb.checked) selectedIndices.push(idx);
   });
   reviewRecords = selectedIndices.map(idx => ({ ...reviewRecords[idx], _origIndex: idx }));
@@ -3123,7 +3123,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Select All checkbox toggle for AI Review
   document.getElementById('reviewSelectAllCheckbox').addEventListener('change', function() {
     const selected = this.checked;
-    document.querySelectorAll('.ai-review-select-cb input[type="checkbox"]').forEach(cb => cb.checked = selected);
+    document.querySelectorAll('[type="checkbox"].ai-review-select-cb').forEach(cb => cb.checked = selected);
   });
   
   // Edit panel buttons

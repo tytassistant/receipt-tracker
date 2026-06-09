@@ -2251,7 +2251,7 @@ async function reviewWithAI() {
   progressDiv.style.display = 'none';
   
   // Deselect all "Select for AI Review" checkboxes after review completes
-  document.querySelectorAll('.ai-review-select-cb input[type="checkbox"]').forEach(cb => { cb.checked = false; });
+  document.querySelectorAll('[type="checkbox"].ai-review-select-cb').forEach(cb => { cb.checked = false; });
   const sa = document.getElementById('reviewSelectAllCheckbox');
   if (sa) sa.checked = false;
   
@@ -2259,6 +2259,10 @@ async function reviewWithAI() {
   const totalFailures = failureCategoryA.length + failureCategoryB.length + failureCategoryC.length;
   if (totalFailures > 0) {
     const lines = ['AI REVIEW SUMMARY', ''];
+    
+    // Summary line first, before details
+    lines.push('Verified: ' + verified + ' | Mismatch: ' + failureCategoryA.length + ' | No Figure: ' + failureCategoryB.length + ' | Other Error: ' + failureCategoryC.length);
+    lines.push('');
     
     if (failureCategoryA.length > 0) {
       lines.push('═══ AMOUNT MISMATCHED WITH POE EXTRACTION (' + failureCategoryA.length + ') ═══');
@@ -2284,8 +2288,6 @@ async function reviewWithAI() {
       lines.push('');
     }
     
-    // Summary line exactly as requested
-    lines.push('Verified: ' + verified + ' | Figure Mismatch: ' + failureCategoryA.length + ' | LLM Returns NO Figure: ' + failureCategoryB.length + ' | Other Error: ' + failureCategoryC.length);
     
     showAiReviewErrorDialog(lines.join('\n'));
   } else {

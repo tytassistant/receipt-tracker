@@ -2863,8 +2863,8 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('saveEditBtn').addEventListener('click', saveEditChanges);
   
   // Welcome panel date changes trigger refresh
-  document.getElementById('summaryStartDate').addEventListener('change', () => {
-    localStorage.setItem('receipt-tracker-summary-start-date', this.value);
+  document.getElementById('summaryStartDate').addEventListener('change', (e) => {
+    localStorage.setItem('receipt-tracker-summary-start-date', e.target.value);
     loadSummaryData();
   });
   document.getElementById('summaryEndDate').addEventListener('change', () => loadSummaryData());

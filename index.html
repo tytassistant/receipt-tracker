@@ -2194,7 +2194,7 @@ async function reviewWithAI() {
       
       if (!response.ok) {
         const errBody = await response.text().catch(() => '');
-        throw new Error('Poe API error ' + response.status + ': ' + errBody.substring(0, 100));
+        throw new Error('Poe API error ' + response.status + ': ' + errBody.substring(0, 500));
       }
       
       const data = await response.json();

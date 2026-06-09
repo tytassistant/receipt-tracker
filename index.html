@@ -2121,7 +2121,7 @@ async function reviewWithAI() {
   document.querySelectorAll('[type="checkbox"].ai-review-select-cb').forEach((cb, idx) => {
     if (cb.checked) selectedIndices.push(idx);
   });
-  reviewRecords = selectedIndices.map(idx => ({ ...reviewRecords[idx], _origIndex: idx }));
+  const selRefs = selectedIndices.map(si => ({ ...reviewRecords[si], _origIndex: si }));
 
   const progressDiv = document.getElementById('reviewAiProgress');
   const progressText = document.getElementById('reviewAiProgressText');
@@ -2144,8 +2144,8 @@ async function reviewWithAI() {
   
   const model = document.getElementById('reviewModelSelector')?.value || 'kimi-k2.5-fw';
   
-  for (let i = 0; i < reviewRecords.length; i++) {
-    const r = reviewRecords[i];
+  for (let i = 0; i < selRefs.length; i++) {
+    const r = selRefs[i];
     const fileId = r.imageUrl?.match(/file\/d\/([^/?]+)/)?.[1];
     if (!fileId) { 
       failureCategoryC.push({ index: r._origIndex, receiptInfo: r.description || 'Record #' + (r._origIndex + 1), reason: 'No image file ID found' });

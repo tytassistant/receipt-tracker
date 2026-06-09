@@ -1803,6 +1803,14 @@ function showReviewRecordsPanel() {
     }
     
     reviewRecords = result.receipts;
+
+    // Sort by date descending, stable (ties keep original order)
+    reviewRecords.sort((a, b) => {
+      const da = new Date(a.date);
+      const db = new Date(b.date);
+      return db - da;
+    });
+
     renderReviewCards(reviewRecords);
     document.getElementById('reviewContent').style.display = 'block';
     document.getElementById('reviewEmpty').style.display = 'none';

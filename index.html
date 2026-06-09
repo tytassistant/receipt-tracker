@@ -1314,9 +1314,15 @@
         </div>
       </div>
 
-      <button class="btn btn-accent btn-block" id="reviewWithAiBtn" style="margin-top:12px;">
-        <i class="fas fa-robot"></i> Review with AI
-      </button>
+<div style="display:flex; gap:16px; align-items:center; margin-top:12px; justify-content:center;">
+  <label style="display:flex; align-items:center; gap:6px; cursor:pointer; font-size:13px; color:var(--text-muted); user-select:none;" id="reviewSelectAllWrap" hidden>
+    <input type="checkbox" id="reviewSelectAllCheckbox">
+    Select All
+  </label>
+  <button class="btn btn-accent" id="reviewWithAiBtn" style="flex:1; max-width:300px; margin-top:0;">
+    <i class="fas fa-robot"></i> Review with AI
+  </button>
+</div>
 
       <div class="button-row" style="margin-top:16px;">
         <button class="btn btn-outline btn-compact btn-icon-text" id="backToSummaryFromReviewBtn">
@@ -1954,9 +1960,10 @@ function showReviewRecordsPanel() {
     if (!result.success || !result.receipts || result.receipts.length === 0) {
       document.getElementById('reviewEmpty').style.display = 'block';
       document.getElementById('reviewContent').style.display = 'none';
+      document.getElementById('reviewSelectAllWrap').setAttribute('hidden', '');
       return;
     }
-    
+
     reviewRecords = result.receipts;
 
     // Sort by date descending, stable (ties keep original order)
@@ -1967,6 +1974,8 @@ function showReviewRecordsPanel() {
     });
 
     renderReviewCards(reviewRecords);
+    // Show Select All checkbox — it appears left of Review with AI button
+    document.getElementById('reviewSelectAllWrap').removeAttribute('hidden');
     document.getElementById('reviewContent').style.display = 'block';
     document.getElementById('reviewEmpty').style.display = 'none';
   }).catch(e => {
@@ -2028,7 +2037,13 @@ function renderReviewCards(receipts) {
           </div>
         </div>
       </div>
-    `;
+      <div style="text-align:center; padding-top:12px; border-top:1px solid var(--border); margin-top:8px;">
+        <label style="display:flex; align-items:center; justify-content:center; gap:6px; cursor:pointer; font-size:13px; color:var(--text-muted); user-select:none;" class="select-for-ai-review">
+          <input type="checkbox" class="ai-review-select-cb">
+          Select for AI Review
+        </label>
+      </div>
+    `
   }).join('');
 }
 
@@ -2094,6 +2109,20 @@ async function reviewWithAI() {
     return;
   }
   
+  // Check for selected records
+  const checkedEl = document.querySelectorAll('.ai-review-select-cb input[type="checkbox"]:checked');
+  if (checkedEl.length === 0) {
+    showToast('Please select at least one record for AI review.', 'error');
+    return;
+  }
+  
+  // Filter to only selected records, preserving DOM index for checkbox mapping
+  const selectedIndices = [];
+  document.querySelectorAll('.ai-review-select-cb input[type="checkbox"]').forEach((cb, idx) => {
+    if (cb.checked) selectedIndices.push(idx);
+  });
+  reviewRecords = selectedIndices.map(idx => ({ ...reviewRecords[idx], _origIndex: idx }));
+
   const progressDiv = document.getElementById('reviewAiProgress');
   const progressText = document.getElementById('reviewAiProgressText');
   progressDiv.style.display = 'block';
@@ -2119,8 +2148,8 @@ async function reviewWithAI() {
     const r = reviewRecords[i];
     const fileId = r.imageUrl?.match(/file\/d\/([^/?]+)/)?.[1];
     if (!fileId) { 
-      failureCategoryC.push({ index: i, receiptInfo: r.description || 'Record #' + (i + 1), reason: 'No image file ID found' });
-      console.error('[AI Review] ❌ Record ' + (i + 1) + ': No image file ID');
+      failureCategoryC.push({ index: r._origIndex, receiptInfo: r.description || 'Record #' + (r._origIndex + 1), reason: 'No image file ID found' });
+      console.error('[AI Review] ❌ Record ' + (r._origIndex + 1) + ': No image file ID');
       continue; 
     }
     
@@ -2131,11 +2160,11 @@ async function reviewWithAI() {
     const imageDataUrl = await imageUrlToDataUrl(r.imageUrl);
     if (!imageDataUrl) {
       failureCategoryC.push({ 
-        index: i, 
-        receiptInfo: r.description || 'Record #' + (i + 1), 
+        index: r._origIndex, 
+        receiptInfo: r.description || 'Record #' + (r._origIndex + 1), 
         reason: 'Connection/Network Error (image fetch failed)' 
       });
-      console.error('[AI Review] ❌ Record ' + (i + 1) + ': Connection/Network Error (image fetch)');
+      console.error('[AI Review] ❌ Record ' + (r._origIndex + 1) + ': Connection/Network Error (image fetch)');
       await new Promise(resolve => setTimeout(resolve, 500));
       continue;
     }
@@ -2177,26 +2206,26 @@ async function reviewWithAI() {
         const recordAmount = parseFloat(r.amount) || 0;
         const tolerance = parseFloat(document.getElementById('reviewToleranceInput')?.value) || 0.50;
         if (Math.abs(extractedTotal - recordAmount) < tolerance) {
-          const checkbox = document.getElementById('review-check-' + i);
+          const checkbox = document.getElementById('review-check-' + r._origIndex);
           if (checkbox) checkbox.checked = true;
           verified++;
         } else {
           failureCategoryA.push({ 
-            index: i, 
-            receiptInfo: r.description || 'Record #' + (i + 1),
+            index: r._origIndex, 
+            receiptInfo: r.description || 'Record #' + (r._origIndex + 1),
             poeResult: extractedTotal,
             expectedAmount: recordAmount 
           });
-          console.warn('[AI Review] ⚠️ Record ' + (i + 1) + ': Amount mismatched (POE=' + extractedTotal + ', Expected=' + recordAmount + ')');
+          console.warn('[AI Review] ⚠️ Record ' + (r._origIndex + 1) + ': Amount mismatched (POE=' + extractedTotal + ', Expected=' + recordAmount + ')');
         }
       } else {
         // POE returned nothing with clear total → Category B
         failureCategoryB.push({ 
-          index: i, 
-          receiptInfo: r.description || 'Record #' + (i + 1),
+          index: r._origIndex, 
+          receiptInfo: r.description || 'Record #' + (r._origIndex + 1),
           reason: 'No clear total extractable'
         });
-        console.warn('[AI Review] ⚠️ Record ' + (i + 1) + ': LLM returned no figure');
+        console.warn('[AI Review] ⚠️ Record ' + (r._origIndex + 1) + ': LLM returned no figure');
       }
     } catch (e) {
       // Category C — classify error type before logging
@@ -2209,17 +2238,22 @@ async function reviewWithAI() {
       }
       
       failureCategoryC.push({ 
-        index: i, 
-        receiptInfo: r.description || 'Record #' + (i + 1),
+        index: r._origIndex, 
+        receiptInfo: r.description || 'Record #' + (r._origIndex + 1),
         reason: errorType + ': ' + (e.message || String(e))
       });
-      console.error('[AI Review] ❌ Record ' + (i + 1) + ': ' + errorType);
+      console.error('[AI Review] ❌ Record ' + (r._origIndex + 1) + ': ' + errorType);
     }
     
     await new Promise(resolve => setTimeout(resolve, 800));
   }
   
   progressDiv.style.display = 'none';
+  
+  // Deselect all "Select for AI Review" checkboxes after review completes
+  document.querySelectorAll('.ai-review-select-cb input[type="checkbox"]').forEach(cb => { cb.checked = false; });
+  const sa = document.getElementById('reviewSelectAllCheckbox');
+  if (sa) sa.checked = false;
   
   // Build final summary
   const totalFailures = failureCategoryA.length + failureCategoryB.length + failureCategoryC.length;
@@ -3085,6 +3119,12 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('backToSummaryFromReviewBtn').addEventListener('click', showWelcomePanel);
   document.getElementById('confirmReviewBtn').addEventListener('click', confirmReviewChanges);
   document.getElementById('reviewWithAiBtn').addEventListener('click', reviewWithAI);
+
+  // Select All checkbox toggle for AI Review
+  document.getElementById('reviewSelectAllCheckbox').addEventListener('change', function() {
+    const selected = this.checked;
+    document.querySelectorAll('.ai-review-select-cb input[type="checkbox"]').forEach(cb => cb.checked = selected);
+  });
   
   // Edit panel buttons
   document.getElementById('backToSummaryFromEditBtn').addEventListener('click', showWelcomePanel);

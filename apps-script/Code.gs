@@ -388,6 +388,9 @@ function handleQueryReceipts(data) {
       var allDataRange = sheet.getRange(2, 1, rowsCount, COLUMNS.length);
       var allData = allDataRange.getValues();
       
+      // Also fetch Reviewed column (M = 13) for all rows in one batch
+      var reviewedColData = sheet.getRange(2, 13, rowsCount, 1).getValues();
+      
       for (var j = 0; j < matchingIndices.length; j++) {
         var idx = matchingIndices[j];
         var row = allData[idx];
@@ -416,7 +419,8 @@ function handleQueryReceipts(data) {
           category: category,
           remarks: remarks,
           imageName: imageName,
-          imageUrl: imageUrl
+          imageUrl: imageUrl,
+          reviewed: parseInt(reviewedColData[idx]?.[0]) || 0
         });
         totalAmount += amount;
       }

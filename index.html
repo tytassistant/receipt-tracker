@@ -1993,7 +1993,7 @@ async function reviewWithAI() {
           messages: [{
             role: 'user',
             content: [
-              { type: 'text', text: 'Look at this receipt image. Return ONLY a JSON object with this exact format, no explanation: {"total": NNN.NN} - extract the TOTAL AMOUNT shown on the receipt as a number. If no clear total, return {"total": null}.' },
+              { type: 'text', text: 'Look at this receipt image. Return ONLY a JSON object with this exact format, no explanation: {"total": NNN.NN} - extract the TOTAL AMOUNT shown on the receipt as a number. Some receipts are hand written receipts with no item description or total figure. If such receipt contains only 1 number, use that figure as the total. If such receipt contains two or more numbers with no obvious indication of hierarchy or breakdown, you will need to add up these numbers to come up with the total. If no clear total, return {"total": null}.' },
               { type: 'image_url', image_url: { url: compressed } }
             ]
           }]

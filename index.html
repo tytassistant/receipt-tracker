@@ -1295,7 +1295,7 @@
           All records reviewed!
         </div>
 
-        <div id="reviewAiProgress" style="display:none; text-align:center; padding:16px; background:var(--accent); color:#fff; border-radius:var(--radius-sm); margin-top:16px; font-size:14px; font-weight:600;">
+        <div id="reviewAiProgress" style="display:none; text-align:center; padding:16px; background:rgba(0,0,0,0.04); color:var(--text-primary); border:1px solid var(--border); border-radius:var(--radius-sm); margin-top:16px; font-size:14px; font-weight:500;">
           <i class="fas fa-spinner fa-spin" style="margin-right:8px;"></i>
           <span id="reviewAiProgressText">AI review in progress...</span>
         </div>
@@ -2154,7 +2154,7 @@ async function reviewWithAI() {
     }
     
     // [Removed by Optus 4.7] const thumbUrl = `https://drive.google.com/uc?export=view&id=${fileId}`;
-    progressText.textContent = `Verifying record ${i + 1} of ${reviewRecords.length}...`;
+    progressText.textContent = `Verifying record ${i + 1} of total ${selRefs.length} selected record${selRefs.length === 1 ? '' : 's'}...`;
     
     // Convert to base64 data URL for CORS
     const imageDataUrl = await imageUrlToDataUrl(r.imageUrl);

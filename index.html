@@ -2432,7 +2432,7 @@ async function extractReceiptWithPoe(photo) {
 
 Rules:
 - If date cannot be determined, use null
-- Amount should be numeric only, no symbols
+- amount: find the total amount shown on the receipt. If the receipt is handwritten with only one number, use that as the amount. If multiple numbers appear with no obvious total or hierarchy, add them up and use as the amount. Otherwise, return 0. Amount should be numeric only, no symbols
 - Currency: default to HKD if not clearly stated
 - Category: pick the closest match from the list
 - Remarks: summarize the receipt content briefly` },

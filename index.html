@@ -830,6 +830,97 @@
     @keyframes spin {
       to { transform: rotate(360deg); }
     }
+    
+    /* AI Review Error Dialog — light scrollable overlay */
+    #aiReviewErrorOverlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+    }
+    #aiReviewErrorOverlay.show {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .ai-error-dialog {
+      background: #ffffff;
+      color: #1a1a2e;
+      border-radius: 12px;
+      width: 90%;
+      max-width: 700px;
+      max-height: 85vh;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 16px 48px rgba(0,0,0,0.25);
+      overflow: hidden;
+    }
+    .ai-error-dialog-header {
+      padding: 20px 24px 16px;
+      border-bottom: 1px solid #e2e8f0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .ai-error-dialog-header h3 {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 700;
+      color: #1e293b;
+    }
+    .ai-error-dialog-close {
+      background: none;
+      border: none;
+      font-size: 22px;
+      cursor: pointer;
+      color: #64748b;
+      padding: 0 4px;
+      line-height: 1;
+    }
+    .ai-error-dialog-close:hover {
+      color: #1e293b;
+    }
+    .ai-error-dialog-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px 24px;
+      font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
+      font-size: 13px;
+      line-height: 1.7;
+      white-space: pre-wrap;
+      word-break: break-word;
+      background: #f8fafc;
+    }
+    .ai-error-dialog-footer {
+      padding: 16px 24px;
+      border-top: 1px solid #e2e8f0;
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+    }
+    .ai-error-btn {
+      padding: 10px 28px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: background 0.15s, color 0.15s;
+    }
+    .ai-error-btn.primary {
+      background: #3b82f6;
+      color: #ffffff;
+    }
+    .ai-error-btn.primary:hover {
+      background: #2563eb;
+    }
+    .ai-error-btn.secondary {
+      background: #e2e8f0;
+      color: #475569;
+    }
+    .ai-error-btn.secondary:hover {
+      background: #cbd5e1;
+    }
   </style>
 </head>
 <body>
@@ -1253,6 +1344,21 @@
 <!-- Toast -->
 <div class="toast" id="toast"></div>
 
+<!-- AI Review Error Dialog Overlay -->
+<div id="aiReviewErrorOverlay">
+  <div class="ai-error-dialog">
+    <div class="ai-error-dialog-header">
+      <h3><i class="fas fa-list-check" style="margin-right:8px;color:#3b82f6;"></i>AI Review Summary</h3>
+      <button class="ai-error-dialog-close" onclick="closeAiReviewErrorDialog()" title="Close">&times;</button>
+    </div>
+    <div class="ai-error-dialog-body" id="aiReviewErrorBody"></div>
+    <div class="ai-error-dialog-footer">
+      <button class="ai-error-btn primary" id="aiCopyLogBtn" onclick="copyAiReviewLog()">Copy</button>
+      <button class="ai-error-btn secondary" onclick="closeAiReviewErrorDialog()">Okay</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ==========================================
 // RECEIPT TRACKER - Complete Implementation
@@ -1403,6 +1509,61 @@ function showToast(message, type = '') {
   }
 }
 
+// ==========================================
+// AI REVIEW ERROR DIALOG HELPERS
+// ==========================================
+
+let lastAiReviewLogText = '';
+
+function showAiReviewErrorDialog(logText) {
+  lastAiReviewLogText = logText;
+  document.getElementById('aiReviewErrorBody').textContent = logText;
+  // Reset copy button state
+  const copyBtn = document.getElementById('aiCopyLogBtn');
+  if (copyBtn) copyBtn.textContent = 'Copy';
+  document.getElementById('aiReviewErrorOverlay').classList.add('show');
+}
+
+function closeAiReviewErrorDialog() {
+  document.getElementById('aiReviewErrorOverlay').classList.remove('show');
+}
+
+async function copyAiReviewLog() {
+  const btn = document.getElementById('aiCopyLogBtn');
+  if (!lastAiReviewLogText) return;
+  try {
+    await navigator.clipboard.writeText(lastAiReviewLogText);
+    const orig = btn.textContent;
+    btn.textContent = 'Copied ✓';
+    setTimeout(() => { btn.textContent = orig; }, 2000);
+  } catch (e) {
+    // Fallback for older browsers: select text in dialog body so user can Ctrl+C
+    const bodyEl = document.getElementById('aiReviewErrorBody');
+    if (bodyEl && document.body.createTextRange) {
+      // IE/Edge legacy path — unlikely needed but safe to have
+      console.warn('Clipboard API failed, fallback unavailable');
+    }
+    // As a last resort, create temporary textarea
+    const ta = document.createElement('textarea');
+    ta.value = lastAiReviewLogText;
+    ta.style.position = 'fixed';
+    ta.style.left = '-9999px';
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy'); btn.textContent = 'Copied ✓'; setTimeout(() => { btn.textContent = 'Copy'; }, 2000); } catch(e) {}
+    document.body.removeChild(ta);
+  }
+}
+
+// Close dialog on Escape / overlay click
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    const overlay = document.getElementById('aiReviewErrorOverlay');
+    if (overlay && overlay.classList.contains('show')) {
+      closeAiReviewErrorDialog();
+    }
+  }
+});
 function setStep(stepNum) {
   /* Stepper update code removed - stepper display no longer exists
   document.querySelectorAll('.step-item').forEach(item => {
@@ -1939,7 +2100,12 @@ async function reviewWithAI() {
   progressText.textContent = 'AI review in progress...';
   
   let verified = 0;
-  let errors = 0;
+  
+  // Categorize failures for the dialog summary
+  const failureCategoryA = []; // POE found figure but amount mismatched
+  const failureCategoryB = []; // POE could not extract any usable figure
+  const failureCategoryC = []; // Other errors (connection, API, timeout)
+  
   const poeKey = await getPoeApiKey();
   if (!poeKey) {
     progressDiv.style.display = 'none';
@@ -1952,7 +2118,11 @@ async function reviewWithAI() {
   for (let i = 0; i < reviewRecords.length; i++) {
     const r = reviewRecords[i];
     const fileId = r.imageUrl?.match(/file\/d\/([^/?]+)/)?.[1];
-    if (!fileId) { errors++; continue; }
+    if (!fileId) { 
+      failureCategoryC.push({ index: i, receiptInfo: r.description || 'Record #' + (i + 1), reason: 'No image file ID found' });
+      console.error('[AI Review] ❌ Record ' + (i + 1) + ': No image file ID');
+      continue; 
+    }
     
     // [Removed by Optus 4.7] const thumbUrl = `https://drive.google.com/uc?export=view&id=${fileId}`;
     progressText.textContent = `Verifying record ${i + 1} of ${reviewRecords.length}...`;
@@ -1960,8 +2130,12 @@ async function reviewWithAI() {
     // Convert to base64 data URL for CORS
     const imageDataUrl = await imageUrlToDataUrl(r.imageUrl);
     if (!imageDataUrl) {
-      console.error('Could not fetch image: ' + r.imageUrl);
-      errors++;
+      failureCategoryC.push({ 
+        index: i, 
+        receiptInfo: r.description || 'Record #' + (i + 1), 
+        reason: 'Connection/Network Error (image fetch failed)' 
+      });
+      console.error('[AI Review] ❌ Record ' + (i + 1) + ': Connection/Network Error (image fetch)');
       await new Promise(resolve => setTimeout(resolve, 500));
       continue;
     }
@@ -2006,18 +2180,83 @@ async function reviewWithAI() {
           const checkbox = document.getElementById('review-check-' + i);
           if (checkbox) checkbox.checked = true;
           verified++;
+        } else {
+          failureCategoryA.push({ 
+            index: i, 
+            receiptInfo: r.description || 'Record #' + (i + 1),
+            poeResult: extractedTotal,
+            expectedAmount: recordAmount 
+          });
+          console.warn('[AI Review] ⚠️ Record ' + (i + 1) + ': Amount mismatched (POE=' + extractedTotal + ', Expected=' + recordAmount + ')');
         }
+      } else {
+        // POE returned nothing with clear total → Category B
+        failureCategoryB.push({ 
+          index: i, 
+          receiptInfo: r.description || 'Record #' + (i + 1),
+          reason: 'No clear total extractable'
+        });
+        console.warn('[AI Review] ⚠️ Record ' + (i + 1) + ': LLM returned no figure');
       }
     } catch (e) {
-      console.error('AI review error record ' + i + ':', e);
-      errors++;
+      // Category C — classify error type before logging
+      let errorType = 'Connection/Network Error';
+      if (e.name === 'AbortError') {
+        errorType = 'Request Timeout / Abort';
+      } else if (e.message && e.message.match(/status code #\d+/)) {
+        const statusMatch = e.message.match(/status code #(\d+)/);
+        if (statusMatch) errorType = 'API Error (HTTP ' + statusMatch[1] + ')';
+      }
+      
+      failureCategoryC.push({ 
+        index: i, 
+        receiptInfo: r.description || 'Record #' + (i + 1),
+        reason: errorType + ': ' + (e.message || String(e))
+      });
+      console.error('[AI Review] ❌ Record ' + (i + 1) + ': ' + errorType);
     }
     
     await new Promise(resolve => setTimeout(resolve, 800));
   }
   
   progressDiv.style.display = 'none';
-  showToast('Review completed. ' + verified + ' verified, ' + errors + ' errors.', verified > 0 ? 'success' : 'info');
+  
+  // Build final summary
+  const totalFailures = failureCategoryA.length + failureCategoryB.length + failureCategoryC.length;
+  if (totalFailures > 0) {
+    const lines = ['AI REVIEW SUMMARY', ''];
+    
+    if (failureCategoryA.length > 0) {
+      lines.push('═══ AMOUNT MISMATCHED WITH POE EXTRACTION (' + failureCategoryA.length + ') ═══');
+      failureCategoryA.forEach(f => 
+        lines.push('  - ' + f.receiptInfo + ': POE found ' + f.poeResult + ', receipt showed ' + f.expectedAmount)
+      );
+      lines.push('');
+    }
+    
+    if (failureCategoryB.length > 0) {
+      lines.push('═══ LLM RETURNED NO FIGURE (' + failureCategoryB.length + ') ═══');
+      failureCategoryB.forEach(f => 
+        lines.push('  - ' + f.receiptInfo + ': ' + f.reason)
+      );
+      lines.push('');
+    }
+    
+    if (failureCategoryC.length > 0) {
+      lines.push('═══ OTHER ERRORS (' + failureCategoryC.length + ') ═══');
+      failureCategoryC.forEach(f => 
+        lines.push('  - ' + f.receiptInfo + ': ' + f.reason)
+      );
+      lines.push('');
+    }
+    
+    // Summary line exactly as requested
+    lines.push('Verified: ' + verified + ' | Figure Mismatch: ' + failureCategoryA.length + ' | LLM Returns NO Figure: ' + failureCategoryB.length + ' | Other Error: ' + failureCategoryC.length);
+    
+    showAiReviewErrorDialog(lines.join('\n'));
+  } else {
+    showToast('AI review complete. All records verified.', 'success');
+  }
 }
 
 // ==========================================

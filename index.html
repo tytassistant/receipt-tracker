@@ -2032,7 +2032,7 @@ function renderReviewCards(receipts) {
         </div>
         <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-top:12px;">
           <label style="display:flex; align-items:center; gap:6px; cursor:pointer; font-size:13px; color:var(--text-muted); user-select:none;">
-            <input type="checkbox" class="ai-review-select-cb">
+            <input type="checkbox" class="ai-review-select-cb" data-review-status="${r.reviewed}">
             Select for AI Review
           </label>
           <span style="display:flex; align-items:center; gap:6px; font-size:13px; color:var(--text-muted); user-select:none;">
@@ -3140,7 +3140,11 @@ document.addEventListener('DOMContentLoaded', () => {
   // Select All checkbox toggle for AI Review
   document.getElementById('reviewSelectAllCheckbox').addEventListener('change', function() {
     const selected = this.checked;
-    document.querySelectorAll('[type="checkbox"].ai-review-select-cb').forEach(cb => cb.checked = selected);
+    document.querySelectorAll('[type="checkbox"].ai-review-select-cb').forEach(cb => {
+      if (cb.dataset.reviewStatus !== '2') {
+        cb.checked = selected;
+      }
+    });
   });
   
   // Edit panel buttons

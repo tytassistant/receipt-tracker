@@ -2035,9 +2035,13 @@ function renderReviewCards(receipts) {
             <input type="checkbox" class="ai-review-select-cb">
             Select for AI Review
           </label>
-          <span style="display:flex; align-items:center; gap:6px; cursor:pointer; font-size:13px; color:var(--text-muted); user-select:none;">
-            Review status: Reviewed
-            <input type="checkbox" id="review-check-${index}" ${r.reviewed ? 'checked' : ''} style="width:18px; height:18px; cursor:pointer;">
+          <span style="display:flex; align-items:center; gap:6px; font-size:13px; color:var(--text-muted); user-select:none;">
+            Review status:
+            <select id="review-status-${index}" style="padding:4px 8px; border:1px solid var(--border); border-radius:var(--radius-sm); font-size:13px; cursor:pointer;">
+              <option value="" ${r.reviewed == '' || r.reviewed == null ? 'selected' : ''}>Pending Review</option>
+              <option value="2" ${r.reviewed === 2 || r.reviewed == '2' ? 'selected' : ''}>AI Review Attempted</option>
+              <option value="1" ${r.reviewed === 1 || r.reviewed == '1' ? 'selected' : ''}>Verified</option>
+            </select>
           </span>
         </div>
       </div>
@@ -2061,7 +2065,7 @@ async function confirmReviewChanges() {
     amount: document.getElementById('review-amount-' + index)?.value || r.amount,
     currency: document.getElementById('review-currency-' + index)?.value || r.currency,
     category: document.getElementById('review-category-' + index)?.value || r.category,
-    reviewed: document.getElementById('review-check-' + index)?.checked ? 1 : 0
+    reviewed: (() => { const v = document.getElementById('review-status-' + index)?.value; return v ? parseInt(v) : null; })()
   }));
   
   try {
@@ -2205,8 +2209,8 @@ async function reviewWithAI() {
         const recordAmount = parseFloat(r.amount) || 0;
         const tolerance = parseFloat(document.getElementById('reviewToleranceInput')?.value) || 0.50;
         if (Math.abs(extractedTotal - recordAmount) < tolerance) {
-          const checkbox = document.getElementById('review-check-' + r._origIndex);
-          if (checkbox) checkbox.checked = true;
+          const seA = document.getElementById('review-status-' + r._origIndex);
+          if (seA && seA.value !== '1') seA.value = '1';
           verified++;
         } else {
           failureCategoryA.push({ 
@@ -2216,6 +2220,10 @@ async function reviewWithAI() {
             expectedAmount: recordAmount 
           });
           console.warn('[AI Review] ⚠️ Record ' + (r._origIndex + 1) + ': Amount mismatched (POE=' + extractedTotal + ', Expected=' + recordAmount + ')');
+          
+          // Set status to "2" (AI Review Attempted) for failures
+          const seF = document.getElementById('review-status-' + r._origIndex);
+          if (seF && seF.value !== '2') seF.value = '2';
         }
       } else {
         // POE returned nothing with clear total → Category B
@@ -2225,6 +2233,10 @@ async function reviewWithAI() {
           reason: 'No clear total extractable'
         });
         console.warn('[AI Review] ⚠️ Record ' + (r._origIndex + 1) + ': LLM returned no figure');
+        
+        // Set status to "2" (AI Review Attempted) for failures
+        const seG = document.getElementById('review-status-' + r._origIndex);
+        if (seG && seG.value !== '2') seG.value = '2';
       }
     } catch (e) {
       // Category C — classify error type before logging
@@ -2242,6 +2254,10 @@ async function reviewWithAI() {
         reason: errorType + ': ' + (e.message || String(e))
       });
       console.error('[AI Review] ❌ Record ' + (r._origIndex + 1) + ': ' + errorType);
+      
+      // Set status to "2" (AI Review Attempted) for failures
+      const seH = document.getElementById('review-status-' + r._origIndex);
+      if (seH && seH.value !== '2') seH.value = '2';
     }
     
     await new Promise(resolve => setTimeout(resolve, 800));

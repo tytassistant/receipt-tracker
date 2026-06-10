@@ -765,11 +765,11 @@ function handleQueryReviewed(data) {
     var dateCell = row[1]; // Column B: Date
     var reviewedAt = row[13]; // Column N: Reviewed_at
 
-    // Only include if: date matches AND Reviewed_at is empty (not yet reviewed)
+    // Only include if: date matches AND Reviewed column != 1 (i.e., blank/0 or 2)
     if (dateCell instanceof Date &&
         dateCell.getTime() >= startDateObj.getTime() &&
         dateCell.getTime() <= endDateObj.getTime() &&
-        (!reviewedAt || reviewedAt === "")) {
+        parseInt(row[12]) !== 1) {
 
       receipts.push({
         id: row[11],

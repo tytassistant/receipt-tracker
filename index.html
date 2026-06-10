@@ -1380,7 +1380,7 @@
   <div class="lightbox-bottom-bar" id="lightboxBottomBar">
     <button class="lightbox-nav-btn" id="lightboxPrevBtn" title="Previous record"><i class="fas fa-chevron-left"></i></button>
     <span class="lightbox-amount-display" id="lightboxAmountDisplay"></span>
-    <button class="lightbox-verified-btn" id="lightboxVerifiedBtn">Verified</button>
+    <button class="lightbox-verified-btn" id="lightboxVerifiedBtn">Confirm</button>
     <button class="lightbox-nav-btn" id="lightboxNextBtn" title="Next record"><i class="fas fa-chevron-right"></i></button>
   </div>
 </div>
@@ -2631,9 +2631,7 @@ function updateLightboxInfoBar() {
   // Verified button state
   const isVerified = r.reviewed == '1' || r.reviewed === 1;
   verifiedBtn.disabled = isVerified;
-  verifiedBtn.innerHTML = isVerified
-    ? '<i class="fas fa-check" style="margin-right:4px"></i>Verified'
-    : '<i class="fas fa-check" style="margin-right:4px"></i>Verified';
+  verifiedBtn.textContent = isVerified ? 'Confirmed' : 'Confirm';
 }
 
 function goToNextRecord() {

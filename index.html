@@ -759,7 +759,8 @@
     .lightbox-overlay {
       display: none; position: fixed; inset: 0; z-index: 9999;
       background: rgba(0,0,0,0.9); flex-direction: column;
-      align-items: center; justify-content: center;
+      align-items: center; justify-content: flex-start;
+      overflow-y: auto; padding: 24px 16px 24px 16px;
     }
     .lightbox-overlay.open { display: flex; }
     .lightbox-close {
@@ -789,14 +790,10 @@
       cursor: grab;
     }
 
-    /* Lightbox bottom info bar */
+    /* Lightbox bottom info bar — flex flow, no overlap with image */
     .lightbox-bottom-bar {
-      position: absolute;
-      bottom: 24px; left: 50%; transform: translateX(-50%);
-      display: flex; align-items: center; justify-content: center; gap: 48px;
-      background: rgba(30,30,26,0.85);
-      padding: 10px 28px 10px 28px;
-      border-radius: var(--radius-lg); z-index: 5;
+      display: flex; align-items: center; justify-content: center; gap: 24px;
+      width: 100%; max-width: 480px; margin-top: auto; padding: 16px 0 12px;
     }
 
     .lightbox-nav-btn {
@@ -810,8 +807,8 @@
 
     .lightbox-amount-display {
       color: var(--accent);
-      font-size: 18px; font-weight: 700; letter-spacing: -0.3px;
-      min-width: 80px; text-align: center; user-select: none;
+      font-size: 18px; font-weight: 700; letter-spacing: -0.3px; text-align: center;
+      user-select: none;
     }
 
     .lightbox-verified-btn {
@@ -1383,7 +1380,7 @@
   <div class="lightbox-bottom-bar" id="lightboxBottomBar">
     <button class="lightbox-nav-btn" id="lightboxPrevBtn" title="Previous record"><i class="fas fa-chevron-left"></i></button>
     <span class="lightbox-amount-display" id="lightboxAmountDisplay"></span>
-    <button class="lightbox-verified-btn" id="lightboxVerifiedBtn">Verify &amp; Save</button>
+    <button class="lightbox-verified-btn" id="lightboxVerifiedBtn">Verified</button>
     <button class="lightbox-nav-btn" id="lightboxNextBtn" title="Next record"><i class="fas fa-chevron-right"></i></button>
   </div>
 </div>
@@ -2595,6 +2592,12 @@ function openLightbox(dataUrl, recordIndex) {
   document.getElementById('lightboxImg').src = dataUrl;
   currentLightboxIndex = (typeof recordIndex === 'number') ? recordIndex : -1;
   updateLightboxInfoBar();
+
+  // Preload next image in background (if valid index with a next record exists)
+  if (currentLightboxIndex >= 0 && currentLightboxIndex < reviewRecords.length - 1) {
+    preloadNextImage(currentLightboxIndex);
+  }
+
   document.getElementById('lightbox').classList.add('open');
 }
 
@@ -2635,6 +2638,10 @@ function updateLightboxInfoBar() {
 
 function goToNextRecord() {
   if (currentLightboxIndex >= 0 && currentLightboxIndex < reviewRecords.length - 1) {
+    // Preload the image after next (two steps ahead) in background
+    const preloadIdx = currentLightboxIndex + 1;
+    preloadNextImage(preloadIdx);
+
     currentLightboxIndex++;
     loadRecordImageIntoLightbox(currentLightboxIndex);
     updateLightboxInfoBar();
@@ -2674,6 +2681,16 @@ function loadRecordImageIntoLightbox(recordIndex) {
   }
   document.getElementById('lightboxImg').src = url;
 }
+
+// Background image preloader — loads next record's image in background via browser HTTP cache
+function preloadNextImage(recordIndex) {
+  const r = reviewRecords[recordIndex];
+  if (!r || !r.imageUrl) return;
+  const fileIdMatch = r.imageUrl.match(/file\/d\/([^/]+)/);
+  if (!fileIdMatch) return;
+  new Image().src = 'https://drive.google.com/thumbnail?id=' + fileIdMatch[1] + '&sz=w800';
+}
+
 // ==========================================
 // AI EXTRACTION & MANUAL ENTRY
 // ==========================================

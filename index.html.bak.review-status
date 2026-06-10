@@ -759,8 +759,7 @@
     .lightbox-overlay {
       display: none; position: fixed; inset: 0; z-index: 9999;
       background: rgba(0,0,0,0.9); flex-direction: column;
-      align-items: center; justify-content: flex-start;
-      overflow-y: auto; padding: 24px 16px 24px 16px;
+      align-items: center; justify-content: center;
     }
     .lightbox-overlay.open { display: flex; }
     .lightbox-close {
@@ -789,36 +788,6 @@
       max-width: none; max-height: none;
       cursor: grab;
     }
-
-    /* Lightbox bottom info bar — flex flow, no overlap with image */
-    .lightbox-bottom-bar {
-      display: flex; align-items: center; justify-content: center; gap: 24px;
-      width: 100%; max-width: 480px; margin-top: auto; padding: 16px 0 12px;
-    }
-
-    .lightbox-nav-btn {
-      background: rgba(255,255,255,0.12);
-      border: none; color: #fff; font-size: 20px; width: 42px; height: 42px;
-      border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center;
-      transition: var(--transition);
-    }
-    .lightbox-nav-btn:hover:not(:disabled) { background: rgba(255,255,255,0.25); }
-    .lightbox-nav-btn:disabled { opacity: 0.3; cursor: not-allowed; }
-
-    .lightbox-amount-display {
-      color: var(--accent);
-      font-size: 18px; font-weight: 700; letter-spacing: -0.3px; text-align: center;
-      user-select: none;
-    }
-
-    .lightbox-verified-btn {
-      background: linear-gradient(135deg, var(--green-primary), var(--green-light));
-      border: none; color: #fff; font-family: 'Bricolage Grotesque', sans-serif;
-      font-size: 14px; font-weight: 600; padding: 8px 20px; border-radius: var(--radius-sm);
-      cursor: pointer; transition: var(--transition);
-    }
-    .lightbox-verified-btn:hover:not(:disabled) { opacity: 0.9; }
-    .lightbox-verified-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
     /* Sync Progress */
     .sync-progress {
@@ -1376,13 +1345,6 @@
   <div class="lightbox-img-wrap">
     <img id="lightboxImg" src="" alt="Receipt">
   </div>
-  <!-- Bottom info bar -->
-  <div class="lightbox-bottom-bar" id="lightboxBottomBar">
-    <button class="lightbox-nav-btn" id="lightboxPrevBtn" title="Previous record"><i class="fas fa-chevron-left"></i></button>
-    <span class="lightbox-amount-display" id="lightboxAmountDisplay"></span>
-    <button class="lightbox-verified-btn" id="lightboxVerifiedBtn">Verified</button>
-    <button class="lightbox-nav-btn" id="lightboxNextBtn" title="Next record"><i class="fas fa-chevron-right"></i></button>
-  </div>
 </div>
 
 <!-- Toast -->
@@ -1417,7 +1379,6 @@ let photos = []; // { id, dataUrl, file }
 let receipts = [];
 let reviewRecords = []; // { id, recordNo, date, description, amount, currency, category, remarks, imageUrl, imageName, reviewed, reviewedAt }
 let isExtracting = false;
-let currentLightboxIndex = -1; // tracked record index when opened from review cards
 
 // DOM Elements
 const sections = {
@@ -1888,7 +1849,7 @@ async function loadSummaryData() {
     
     // Populate table
     const tbody = document.getElementById('summaryTableBody');
-    tbody.innerHTML = receipts.map((r, index) => `\n      <tr style="border-bottom:1px solid var(--border-light);">\n        <td style="padding:10px 12px;">${escapeHtml(r.description || '-')} ${(r.reviewed == 1 || r.reviewed === '1') ? '<i class="fas fa-check-circle" style="color:var(--success); margin-left:6px; font-size:14px;" title="Reviewed"></i>' : ''}</td>\n        <td style="padding:10px 12px; font-size:13px; color:var(--text-muted);">${r.date || '-'}</td>\n        <td style="padding:10px 12px; text-align:right; font-weight:600;">${r.currency || 'HKD'} ${r.amount || '0'}</td>\n        <td style="padding:10px 8px; text-align:center;">\n          <button class="btn-icon-edit" onclick="openEditPanel(${index})" title="Edit receipt" style="background:transparent; border:none; cursor:pointer; color:var(--accent); padding:4px; border-radius:4px;">\n            <i class="fas fa-pen-to-square"></i>\n          </button>\n        </td>\n      </tr>\n    `).join('');
+    tbody.innerHTML = receipts.map((r, index) => `\n      <tr style="border-bottom:1px solid var(--border-light);">\n        <td style="padding:10px 12px;">${escapeHtml(r.description || '-')} ${r.reviewed ? '<i class="fas fa-check-circle" style="color:var(--success); margin-left:6px; font-size:14px;" title="Reviewed"></i>' : ''}</td>\n        <td style="padding:10px 12px; font-size:13px; color:var(--text-muted);">${r.date || '-'}</td>\n        <td style="padding:10px 12px; text-align:right; font-weight:600;">${r.currency || 'HKD'} ${r.amount || '0'}</td>\n        <td style="padding:10px 8px; text-align:center;">\n          <button class="btn-icon-edit" onclick="openEditPanel(${index})" title="Edit receipt" style="background:transparent; border:none; cursor:pointer; color:var(--accent); padding:4px; border-radius:4px;">\n            <i class="fas fa-pen-to-square"></i>\n          </button>\n        </td>\n      </tr>\n    `).join('');
     
     summaryContent.style.display = 'block';
   } catch (e) {
@@ -2034,7 +1995,7 @@ function renderReviewCards(receipts) {
       <div class="receipt-card" style="margin-bottom:16px; border:1px solid var(--border); border-radius:var(--radius); padding:16px;">
         <div style="display:flex; gap:16px;">
           ${thumbUrl 
-            ? `<img src="${thumbUrl}" class="receipt-card-thumb" style="width:64px; height:64px; object-fit:cover; border-radius:8px; cursor:pointer; flex-shrink:0;" onclick="openLightbox('https://drive.google.com/thumbnail?id=${fileId}&sz=w800', ${index})" onerror="this.style.display='none'">`
+            ? `<img src="${thumbUrl}" class="receipt-card-thumb" style="width:64px; height:64px; object-fit:cover; border-radius:8px; cursor:pointer; flex-shrink:0;" onclick="openLightbox('https://drive.google.com/thumbnail?id=${fileId}&sz=w800')" onerror="this.style.display='none'">`
             : `<div style="width:64px; height:64px; background:var(--bg-secondary); border-radius:8px; display:flex; align-items:center; justify-content:center; flex-shrink:0;"><i class="fas fa-receipt" style="color:var(--text-muted);"></i></div>`
           }
           <div style="flex:1; display:flex; flex-direction:column;">
@@ -2071,7 +2032,7 @@ function renderReviewCards(receipts) {
         </div>
         <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-top:12px;">
           <label style="display:flex; align-items:center; gap:6px; cursor:pointer; font-size:13px; color:var(--text-muted); user-select:none;">
-            <input type="checkbox" class="ai-review-select-cb" data-review-status="${r.reviewed}">
+            <input type="checkbox" class="ai-review-select-cb">
             Select for AI Review
           </label>
           <span style="display:flex; align-items:center; gap:6px; font-size:13px; color:var(--text-muted); user-select:none;">
@@ -2104,7 +2065,7 @@ async function confirmReviewChanges() {
     amount: document.getElementById('review-amount-' + index)?.value || r.amount,
     currency: document.getElementById('review-currency-' + index)?.value || r.currency,
     category: document.getElementById('review-category-' + index)?.value || r.category,
-    reviewed: (() => { const v = document.getElementById('review-status-' + index)?.value; return v ? parseInt(v) : null; })()
+    reviewed: parseInt(document.getElementById('review-status-' + index)?.value) || null
   }));
   
   try {
@@ -2248,8 +2209,8 @@ async function reviewWithAI() {
         const recordAmount = parseFloat(r.amount) || 0;
         const tolerance = parseFloat(document.getElementById('reviewToleranceInput')?.value) || 0.50;
         if (Math.abs(extractedTotal - recordAmount) < tolerance) {
-          const seA = document.getElementById('review-status-' + r._origIndex);
-          if (seA && seA.value !== '1') seA.value = '1';
+          const checkbox = document.getElementById('review-check-' + r._origIndex);
+          if (checkbox) checkbox.checked = true;
           verified++;
         } else {
           failureCategoryA.push({ 
@@ -2259,10 +2220,6 @@ async function reviewWithAI() {
             expectedAmount: recordAmount 
           });
           console.warn('[AI Review] ⚠️ Record ' + (r._origIndex + 1) + ': Amount mismatched (POE=' + extractedTotal + ', Expected=' + recordAmount + ')');
-          
-          // Set status to "2" (AI Review Attempted) for failures
-          const seF = document.getElementById('review-status-' + r._origIndex);
-          if (seF && seF.value !== '2') seF.value = '2';
         }
       } else {
         // POE returned nothing with clear total → Category B
@@ -2272,10 +2229,6 @@ async function reviewWithAI() {
           reason: 'No clear total extractable'
         });
         console.warn('[AI Review] ⚠️ Record ' + (r._origIndex + 1) + ': LLM returned no figure');
-        
-        // Set status to "2" (AI Review Attempted) for failures
-        const seG = document.getElementById('review-status-' + r._origIndex);
-        if (seG && seG.value !== '2') seG.value = '2';
       }
     } catch (e) {
       // Category C — classify error type before logging
@@ -2293,10 +2246,6 @@ async function reviewWithAI() {
         reason: errorType + ': ' + (e.message || String(e))
       });
       console.error('[AI Review] ❌ Record ' + (r._origIndex + 1) + ': ' + errorType);
-      
-      // Set status to "2" (AI Review Attempted) for failures
-      const seH = document.getElementById('review-status-' + r._origIndex);
-      if (seH && seH.value !== '2') seH.value = '2';
     }
     
     await new Promise(resolve => setTimeout(resolve, 800));
@@ -2588,107 +2537,13 @@ function removePhoto(id) {
   updatePhotoUploadState();
 }
 
-function openLightbox(dataUrl, recordIndex) {
+function openLightbox(dataUrl) {
   document.getElementById('lightboxImg').src = dataUrl;
-  currentLightboxIndex = (typeof recordIndex === 'number') ? recordIndex : -1;
-  updateLightboxInfoBar();
-
-  // Preload next image in background (if valid index with a next record exists)
-  if (currentLightboxIndex >= 0 && currentLightboxIndex < reviewRecords.length - 1) {
-    preloadNextImage(currentLightboxIndex);
-  }
-
   document.getElementById('lightbox').classList.add('open');
 }
 
 function closeLightbox() {
   document.getElementById('lightbox').classList.remove('open');
-}
-
-// Lightbar info bar functions (steps 4-6)
-function updateLightboxInfoBar() {
-  const bar = document.getElementById('lightboxBottomBar');
-  const prevBtn = document.getElementById('lightboxPrevBtn');
-  const nextBtn = document.getElementById('lightboxNextBtn');
-  const amountEl = document.getElementById('lightboxAmountDisplay');
-  const verifiedBtn = document.getElementById('lightboxVerifiedBtn');
-
-  if (currentLightboxIndex < 0 || currentLightboxIndex >= reviewRecords.length) {
-    bar.style.display = 'none';
-    return;
-  }
-
-  const r = reviewRecords[currentLightboxIndex];
-  bar.style.display = 'flex';
-
-  // Amount display: "<CURRENCY> <amount>"
-  amountEl.textContent = [r.currency, r.amount].filter(Boolean).join(' ') || '\u2014';
-
-  // Previous/Next navigation bounds
-  prevBtn.disabled = (currentLightboxIndex === 0);
-  nextBtn.disabled = (currentLightboxIndex === reviewRecords.length - 1);
-
-  // Verified button state
-  const isVerified = r.reviewed == '1' || r.reviewed === 1;
-  verifiedBtn.disabled = isVerified;
-  verifiedBtn.innerHTML = isVerified
-    ? '<i class="fas fa-check" style="margin-right:4px"></i>Verified'
-    : '<i class="fas fa-check" style="margin-right:4px"></i>Verified';
-}
-
-function goToNextRecord() {
-  if (currentLightboxIndex >= 0 && currentLightboxIndex < reviewRecords.length - 1) {
-    // Preload the image after next (two steps ahead) in background
-    const preloadIdx = currentLightboxIndex + 1;
-    preloadNextImage(preloadIdx);
-
-    currentLightboxIndex++;
-    loadRecordImageIntoLightbox(currentLightboxIndex);
-    updateLightboxInfoBar();
-  }
-}
-
-function goToPrevRecord() {
-  if (currentLightboxIndex > 0 && currentLightboxIndex < reviewRecords.length) {
-    currentLightboxIndex--;
-    loadRecordImageIntoLightbox(currentLightboxIndex);
-    updateLightboxInfoBar();
-  }
-}
-
-function handleVerifyInLightbox() {
-  if (currentLightboxIndex < 0 || currentLightboxIndex >= reviewRecords.length) return;
-  const r = reviewRecords[currentLightboxIndex];
-  r.reviewed = '1';
-
-  // Sync the on-screen status dropdown for this record
-  const statusSelect = document.getElementById('review-status-' + currentLightboxIndex);
-  if (statusSelect) statusSelect.value = '1';
-
-  updateLightboxInfoBar();
-}
-
-function loadRecordImageIntoLightbox(recordIndex) {
-  const r = reviewRecords[recordIndex];
-  if (!r || !r.imageUrl) return;
-  const fileIdMatch = r.imageUrl.match(/file\/d\/([^/]+)/);
-  let url = '';
-  if (fileIdMatch) {
-    url = 'https://drive.google.com/thumbnail?id=' + fileIdMatch[1] + '&sz=w800';
-  } else {
-    const thumbId = r.imageUrl?.match(/\/\/([^/]+)\.googleusercontent\.com\/d\?id=([^&]+)/);
-    if (thumbId) url = 'https://' + thumbId[1] + '.googleusercontent.com/d?id=' + thumbId[2];
-  }
-  document.getElementById('lightboxImg').src = url;
-}
-
-// Background image preloader — loads next record's image in background via browser HTTP cache
-function preloadNextImage(recordIndex) {
-  const r = reviewRecords[recordIndex];
-  if (!r || !r.imageUrl) return;
-  const fileIdMatch = r.imageUrl.match(/file\/d\/([^/]+)/);
-  if (!fileIdMatch) return;
-  new Image().src = 'https://drive.google.com/thumbnail?id=' + fileIdMatch[1] + '&sz=w800';
 }
 
 // ==========================================
@@ -3273,11 +3128,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Select All checkbox toggle for AI Review
   document.getElementById('reviewSelectAllCheckbox').addEventListener('change', function() {
     const selected = this.checked;
-    document.querySelectorAll('[type="checkbox"].ai-review-select-cb').forEach(cb => {
-      if (cb.dataset.reviewStatus !== '2') {
-        cb.checked = selected;
-      }
-    });
+    document.querySelectorAll('[type="checkbox"].ai-review-select-cb').forEach(cb => cb.checked = selected);
   });
   
   // Edit panel buttons
@@ -3295,19 +3146,6 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('lightboxClose').addEventListener('click', closeLightbox);
   document.getElementById('lightbox').addEventListener('click', (e) => {
     if (e.target.id === 'lightbox') closeLightbox();
-  });
-  document.getElementById('lightboxPrevBtn').addEventListener('click', goToPrevRecord);
-  document.getElementById('lightboxNextBtn').addEventListener('click', goToNextRecord);
-  document.getElementById('lightboxVerifiedBtn').addEventListener('click', handleVerifyInLightbox);
-
-  // Keyboard navigation for the lightbox
-  document.addEventListener('keydown', (e) => {
-    const lb = document.getElementById('lightbox');
-    if (!lb.classList.contains('open')) return;
-    if (e.key === 'Escape') { e.preventDefault(); closeLightbox(); }
-    else if (e.key === 'ArrowLeft' && currentLightboxIndex > 0) goToPrevRecord();
-    else if (e.key === 'ArrowRight' && currentLightboxIndex < reviewRecords.length - 1) goToNextRecord();
-    else if (e.key.toLowerCase() === 'v') handleVerifyInLightbox();
   });
   
   // Photo upload

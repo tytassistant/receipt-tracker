@@ -2592,12 +2592,6 @@ function openLightbox(dataUrl, recordIndex) {
   document.getElementById('lightboxImg').src = dataUrl;
   currentLightboxIndex = (typeof recordIndex === 'number') ? recordIndex : -1;
   updateLightboxInfoBar();
-
-  // Preload next image in background (if valid index with a next record exists)
-  if (currentLightboxIndex >= 0 && currentLightboxIndex < reviewRecords.length - 1) {
-    preloadNextImage(currentLightboxIndex);
-  }
-
   document.getElementById('lightbox').classList.add('open');
 }
 
@@ -2633,15 +2627,11 @@ function updateLightboxInfoBar() {
   verifiedBtn.disabled = isVerified;
   verifiedBtn.innerHTML = isVerified
     ? '<i class="fas fa-check" style="margin-right:4px"></i>Verified'
-    : '<i class="fas fa-check" style="margin-right:4px"></i>Verified';
+    : 'Verify &amp; Save';
 }
 
 function goToNextRecord() {
   if (currentLightboxIndex >= 0 && currentLightboxIndex < reviewRecords.length - 1) {
-    // Preload the image after next (two steps ahead) in background
-    const preloadIdx = currentLightboxIndex + 1;
-    preloadNextImage(preloadIdx);
-
     currentLightboxIndex++;
     loadRecordImageIntoLightbox(currentLightboxIndex);
     updateLightboxInfoBar();
@@ -2681,16 +2671,6 @@ function loadRecordImageIntoLightbox(recordIndex) {
   }
   document.getElementById('lightboxImg').src = url;
 }
-
-// Background image preloader — loads next record's image in background via browser HTTP cache
-function preloadNextImage(recordIndex) {
-  const r = reviewRecords[recordIndex];
-  if (!r || !r.imageUrl) return;
-  const fileIdMatch = r.imageUrl.match(/file\/d\/([^/]+)/);
-  if (!fileIdMatch) return;
-  new Image().src = 'https://drive.google.com/thumbnail?id=' + fileIdMatch[1] + '&sz=w800';
-}
-
 // ==========================================
 // AI EXTRACTION & MANUAL ENTRY
 // ==========================================

@@ -2669,7 +2669,12 @@ function handleVerifyInLightbox() {
   const statusSelect = document.getElementById('review-status-' + currentLightboxIndex);
   if (statusSelect) statusSelect.value = '1';
 
-  updateLightboxInfoBar();
+  if (currentLightboxIndex < reviewRecords.length - 1) {
+    goToNextRecord();
+  } else {
+    updateLightboxInfoBar();
+    showToast('Last record reached.', 'info');
+  }
 }
 
 function loadRecordImageIntoLightbox(recordIndex) {

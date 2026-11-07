@@ -24,3 +24,6 @@ build/
 
 # Internal dev notes
 .dev/
+
+# Windows folder settings (shared folder)
+desktop.ini
